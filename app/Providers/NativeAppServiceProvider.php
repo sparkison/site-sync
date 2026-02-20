@@ -13,7 +13,13 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      */
     public function boot(): void
     {
-        Window::open();
+        Window::open()
+            ->title('SiteSync')
+            ->width(1200)
+            ->height(800)
+            ->minWidth(900)
+            ->minHeight(600)
+            ->titleBarHiddenInset();
     }
 
     /**
@@ -21,7 +27,6 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      */
     public function phpIni(): array
     {
-        return [
-        ];
+        return [];
     }
 }

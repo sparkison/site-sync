@@ -4,8 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\SiteResource\Pages;
 use App\Filament\Resources\SiteResource\RelationManagers;
-use App\Jobs\SyncJob;
 use App\Models\Site;
+use App\Models\SyncLog;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -18,6 +18,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Native\Desktop\Facades\ChildProcess;
 
 class SiteResource extends Resource
 {
@@ -149,12 +150,25 @@ class SiteResource extends Resource
                             return;
                         }
 
-                        SyncJob::dispatchForSync($from, $to, $data['direction'], $data['scope']);
+                        $syncLog = SyncLog::create([
+                            'site_id' => $record->id,
+                            'from_environment_id' => $from->id,
+                            'to_environment_id' => $to->id,
+                            'direction' => $data['direction'],
+                            'scope' => $data['scope'],
+                            'status' => 'pending',
+                        ]);
+
+                        ChildProcess::start(
+                            cmd: [PHP_BINARY, 'artisan', 'sitesync:run', $syncLog->id],
+                            alias: 'sync-'.$syncLog->id,
+                            cwd: base_path(),
+                        );
 
                         Notification::make()
                             ->success()
-                            ->title('Sync queued')
-                            ->body("Syncing {$from->name} → {$to->name}. Check Sync Logs for progress.")
+                            ->title('Sync started')
+                            ->body("Syncing {$from->name} → {$to->name}. Watch the terminal on the dashboard for progress.")
                             ->send();
                     })
                     ->modalWidth('lg'),
