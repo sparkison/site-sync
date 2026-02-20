@@ -6,7 +6,6 @@ use App\Filament\Resources\SiteResource\Pages;
 use App\Filament\Resources\SiteResource\RelationManagers;
 use App\Jobs\SyncJob;
 use App\Models\Site;
-use App\Services\SiteDiscoveryService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -37,8 +36,8 @@ class SiteResource extends Resource
                 Section::make('Site Details')
                     ->compact()
                     ->icon('heroicon-o-globe-alt')
-                    ->collapsible(fn($record): bool => $record !== null)
-                    ->collapsed(fn($record): bool => $record !== null)
+                    ->collapsible(fn ($record): bool => $record !== null)
+                    ->collapsed(fn ($record): bool => $record !== null)
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\TextInput::make('name')
@@ -75,7 +74,7 @@ class SiteResource extends Resource
                 Tables\Columns\TextColumn::make('sql_adapter')
                     ->label('SQL Adapter')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'wpcli' => 'success',
                         'mysqldump' => 'info',
                         default => 'gray',
@@ -104,7 +103,7 @@ class SiteResource extends Resource
                     ->label('Sync')
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
-                    ->schema(fn(Site $record) => [
+                    ->schema(fn (Site $record) => [
                         Forms\Components\Select::make('from_environment_id')
                             ->label('From (Source)')
                             ->options($record->environments()->pluck('name', 'id'))

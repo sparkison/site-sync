@@ -56,7 +56,7 @@ class SyncPullCommand extends Command
         $scope = $this->resolveScope();
 
         $this->info("Pulling [{$site->name}]: {$fromName} → {$toName}");
-        $this->info('Scope: ' . implode(', ', $scope));
+        $this->info('Scope: '.implode(', ', $scope));
         $this->newLine();
 
         try {
@@ -67,7 +67,7 @@ class SyncPullCommand extends Command
             return self::SUCCESS;
         } catch (\Throwable $e) {
             $this->newLine();
-            $this->error('Pull failed: ' . $e->getMessage());
+            $this->error('Pull failed: '.$e->getMessage());
 
             return self::FAILURE;
         }

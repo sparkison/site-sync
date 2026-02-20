@@ -48,7 +48,7 @@ class SyncLog extends Model
 
     public function appendOutput(string $text): void
     {
-        $this->update(['output' => ($this->output ?? '') . $text]);
+        $this->update(['output' => ($this->output ?? '').$text]);
     }
 
     public function markRunning(): void

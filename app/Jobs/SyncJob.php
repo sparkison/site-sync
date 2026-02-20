@@ -17,6 +17,7 @@ class SyncJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 3600;
+
     public int $tries = 1;
 
     public function __construct(
@@ -39,7 +40,7 @@ class SyncJob implements ShouldQueue
 
             $log->markCompleted();
         } catch (Throwable $e) {
-            $log->appendOutput("\n\n[ERROR] " . $e->getMessage());
+            $log->appendOutput("\n\n[ERROR] ".$e->getMessage());
             $log->markFailed();
             throw $e;
         }

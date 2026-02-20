@@ -56,7 +56,7 @@ class SyncPushCommand extends Command
         $scope = $this->resolveScope();
 
         $this->info("Pushing [{$site->name}]: {$fromName} → {$toName}");
-        $this->info('Scope: ' . implode(', ', $scope));
+        $this->info('Scope: '.implode(', ', $scope));
         $this->newLine();
 
         try {
@@ -67,7 +67,7 @@ class SyncPushCommand extends Command
             return self::SUCCESS;
         } catch (\Throwable $e) {
             $this->newLine();
-            $this->error('Push failed: ' . $e->getMessage());
+            $this->error('Push failed: '.$e->getMessage());
 
             return self::FAILURE;
         }

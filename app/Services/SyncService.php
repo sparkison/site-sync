@@ -123,7 +123,7 @@ class SyncService
 
         $extra = $env->mysqldump_options ?? '';
 
-        return "mysqldump {$args} {$extra} " . escapeshellarg($env->db_name);
+        return "mysqldump {$args} {$extra} ".escapeshellarg($env->db_name);
     }
 
     private function buildImportCommand(Environment $env, string $adapter): string
@@ -146,13 +146,13 @@ class SyncService
             $args .= sprintf(' -p%s', escapeshellarg($env->db_password));
         }
 
-        return "mysql {$args} " . escapeshellarg($env->db_name);
+        return "mysql {$args} ".escapeshellarg($env->db_name);
     }
 
     private function syncFiles(Environment $from, Environment $to, string $direction): void
     {
-        $sourcePath = rtrim($from->wordpress_path, '/') . '/wp-content/';
-        $targetPath = rtrim($to->wordpress_path, '/') . '/wp-content/';
+        $sourcePath = rtrim($from->wordpress_path, '/').'/wp-content/';
+        $targetPath = rtrim($to->wordpress_path, '/').'/wp-content/';
 
         if (! $from->is_local) {
             $sourcePath = "{$from->ssh_user}@{$from->ssh_host}:{$sourcePath}";
@@ -171,8 +171,8 @@ class SyncService
         $corePatterns = ['wp-admin/', 'wp-includes/', 'wp-*.php'];
 
         foreach ($corePatterns as $pattern) {
-            $sourcePath = rtrim($from->wordpress_path, '/') . '/' . $pattern;
-            $targetPath = rtrim($to->wordpress_path, '/') . '/';
+            $sourcePath = rtrim($from->wordpress_path, '/').'/'.$pattern;
+            $targetPath = rtrim($to->wordpress_path, '/').'/';
 
             if (! $from->is_local) {
                 $sourcePath = "{$from->ssh_user}@{$from->ssh_host}:{$sourcePath}";
@@ -207,7 +207,7 @@ class SyncService
         $cmd[] = "ssh {$sshOptions}";
 
         foreach ($excludes as $exclude) {
-            $cmd[] = '--exclude=' . $exclude;
+            $cmd[] = '--exclude='.$exclude;
         }
 
         $cmd[] = $source;
@@ -285,7 +285,7 @@ class SyncService
 
         if (! $process->isSuccessful()) {
             throw new \RuntimeException(
-                "Command failed (exit code {$process->getExitCode()}): " . $process->getErrorOutput()
+                "Command failed (exit code {$process->getExitCode()}): ".$process->getErrorOutput()
             );
         }
     }

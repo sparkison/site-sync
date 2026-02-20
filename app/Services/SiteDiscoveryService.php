@@ -47,7 +47,7 @@ class SiteDiscoveryService
         $limit = 5; // don't walk too far up
 
         for ($i = 0; $i < $limit; $i++) {
-            $candidate = $dir . '/' . $filename;
+            $candidate = $dir.'/'.$filename;
             if (file_exists($candidate)) {
                 return $candidate;
             }
@@ -79,7 +79,7 @@ class SiteDiscoveryService
         ];
 
         foreach (['db_name' => 'DB_NAME', 'db_user' => 'DB_USER', 'db_password' => 'DB_PASSWORD', 'db_host' => 'DB_HOST'] as $key => $constant) {
-            if (preg_match("/define\s*\(\s*['\"]" . $constant . "['\"]\s*,\s*['\"]([^'\"]*)['\"].*\)/", $content, $matches)) {
+            if (preg_match("/define\s*\(\s*['\"]".$constant."['\"]\s*,\s*['\"]([^'\"]*)['\"].*\)/", $content, $matches)) {
                 $result[$key] = $matches[1];
             }
         }

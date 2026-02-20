@@ -30,7 +30,7 @@ class SyncLogsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('direction')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'push' => 'warning',
                         'pull' => 'info',
                         default => 'gray',
@@ -48,11 +48,11 @@ class SyncLogsRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('scope')
                     ->label('Scope')
-                    ->formatStateUsing(fn($state) => implode(', ', (array) $state)),
+                    ->formatStateUsing(fn ($state) => implode(', ', (array) $state)),
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'completed' => 'success',
                         'running' => 'warning',
                         'failed' => 'danger',
@@ -74,7 +74,7 @@ class SyncLogsRelationManager extends RelationManager
                 Action::make('view_output')
                     ->label('Output')
                     ->icon('heroicon-o-command-line')
-                    ->modalContent(fn($record) => view('filament.sync-log-output', ['log' => $record]))
+                    ->modalContent(fn ($record) => view('filament.sync-log-output', ['log' => $record]))
                     ->modalWidth('4xl')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Close'),
