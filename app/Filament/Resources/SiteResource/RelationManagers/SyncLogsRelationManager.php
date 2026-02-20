@@ -6,6 +6,7 @@ use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
 
 class SyncLogsRelationManager extends RelationManager
@@ -77,8 +78,9 @@ class SyncLogsRelationManager extends RelationManager
                     ->modalContent(fn ($record) => view('filament.sync-log-output', ['log' => $record]))
                     ->modalWidth('4xl')
                     ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Close'),
-            ])
+                    ->modalCancelActionLabel('Close')
+                    ->button()->hiddenLabel(),
+            ], position: RecordActionsPosition::BeforeCells)
             ->defaultSort('created_at', 'desc')
             ->paginated([10, 25]);
     }

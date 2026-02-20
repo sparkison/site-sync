@@ -17,6 +17,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
 use Native\Desktop\Facades\ChildProcess;
 
@@ -30,6 +31,11 @@ class SiteResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'notes'];
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
@@ -37,8 +43,8 @@ class SiteResource extends Resource
                 Section::make('Site Details')
                     ->compact()
                     ->icon('heroicon-o-globe-alt')
-                    ->collapsible(fn ($record): bool => $record !== null)
-                    ->collapsed(fn ($record): bool => $record !== null)
+                    ->collapsible(fn($record): bool => $record !== null)
+                    ->collapsed(fn($record): bool => $record !== null)
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\TextInput::make('name')
@@ -75,7 +81,7 @@ class SiteResource extends Resource
                 Tables\Columns\TextColumn::make('sql_adapter')
                     ->label('SQL Adapter')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'wpcli' => 'success',
                         'mysqldump' => 'info',
                         default => 'gray',
@@ -100,11 +106,14 @@ class SiteResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
+                DeleteAction::make()->button()->hiddenLabel(),
+                EditAction::make()->button()->hiddenLabel(),
+
                 Action::make('sync')
                     ->label('Sync')
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
-                    ->schema(fn (Site $record) => [
+                    ->schema(fn(Site $record) => [
                         Forms\Components\Select::make('from_environment_id')
                             ->label('From (Source)')
                             ->options($record->environments()->pluck('name', 'id'))
@@ -161,7 +170,7 @@ class SiteResource extends Resource
 
                         ChildProcess::start(
                             cmd: [PHP_BINARY, 'artisan', 'sitesync:run', $syncLog->id],
-                            alias: 'sync-'.$syncLog->id,
+                            alias: 'sync-' . $syncLog->id,
                             cwd: base_path(),
                         );
 
@@ -171,11 +180,9 @@ class SiteResource extends Resource
                             ->body("Syncing {$from->name} → {$to->name}. Watch the terminal on the dashboard for progress.")
                             ->send();
                     })
-                    ->modalWidth('lg'),
-
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
+                    ->modalWidth('lg')
+                    ->button()->hiddenLabel(),
+            ], position: RecordActionsPosition::BeforeCells)
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
@@ -196,7 +203,7 @@ class SiteResource extends Resource
     {
         return [
             'index' => Pages\ListSites::route('/'),
-            'create' => Pages\CreateSite::route('/create'),
+            // 'create' => Pages\CreateSite::route('/create'),
             'edit' => Pages\EditSite::route('/{record}/edit'),
         ];
     }

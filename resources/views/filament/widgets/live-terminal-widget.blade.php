@@ -33,11 +33,8 @@
                     const el = this.$refs.terminal;
                     if (el) { el.scrollTop = el.scrollHeight; }
                 }
-            }"
-            x-init="scrollToBottom()"
-            @if ($isActive) wire:poll.1000ms="$refresh" @endif>
-            <div x-ref="terminal"
-                x-intersect="scrollToBottom()"
+            }" x-init="scrollToBottom()" @if ($isActive) wire:poll.1000ms="$refresh" @endif>
+            <div x-ref="terminal" x-intersect="scrollToBottom()"
                 class="font-mono text-xs leading-relaxed bg-gray-950 text-green-400 rounded-lg p-4 h-72 overflow-y-auto shadow-inner border border-gray-800 dark:border-gray-700">
                 @if ($syncLog && $syncLog->output)
                     <div class="whitespace-pre-wrap break-words">{{ $syncLog->output }}</div>

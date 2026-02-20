@@ -15,19 +15,13 @@
                     {{ $this->siteCount }} {{ Str::plural('site', $this->siteCount) }} configured
                 </p>
             </div>
-
-            <a href="{{ $this->siteCreateUrl }}" wire:navigate
-                class="shrink-0 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:bg-primary-500 dark:hover:bg-primary-400"
-                onclick="event.stopPropagation()">
-                + Add
-            </a>
         </a>
 
         {{-- SSH Keys Card --}}
         <a href="{{ $this->sshKeyIndexUrl }}"
             class="group relative flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-primary-400 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-500">
             <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition group-hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-400 dark:group-hover:bg-amber-900">
+                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600 transition group-hover:bg-green-100 dark:bg-green-950 dark:text-green-400 dark:group-hover:bg-green-900">
                 <x-filament::icon icon="heroicon-o-key" class="h-6 w-6" />
             </div>
 
@@ -37,12 +31,6 @@
                     {{ $this->sshKeyCount }} {{ Str::plural('key', $this->sshKeyCount) }} stored
                 </p>
             </div>
-
-            <a href="{{ $this->sshKeyCreateUrl }}" wire:navigate
-                class="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 dark:bg-amber-500 dark:hover:bg-amber-400"
-                onclick="event.stopPropagation()">
-                + Add
-            </a>
         </a>
 
     </div>

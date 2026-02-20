@@ -16,6 +16,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
 
 class EnvironmentsRelationManager extends RelationManager
@@ -29,6 +30,8 @@ class EnvironmentsRelationManager extends RelationManager
         return $schema
             ->components([
                 Section::make('General')
+                    ->columnSpanFull()
+                    ->compact()
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->label('Environment Name')
@@ -90,6 +93,8 @@ class EnvironmentsRelationManager extends RelationManager
                     ->columns(2),
 
                 Section::make('Database')
+                    ->columnSpanFull()
+                    ->compact()
                     ->schema([
                         Forms\Components\TextInput::make('db_name')
                             ->label('Database Name')
@@ -131,6 +136,8 @@ class EnvironmentsRelationManager extends RelationManager
                     ->columns(3),
 
                 Section::make('SSH Connection')
+                    ->columnSpanFull()
+                    ->compact()
                     ->schema([
                         Forms\Components\TextInput::make('ssh_host')
                             ->label('SSH Host / IP')
@@ -172,6 +179,8 @@ class EnvironmentsRelationManager extends RelationManager
                     ->hidden(fn (Get $get): bool => (bool) $get('is_local')),
 
                 Section::make('Exclude Patterns')
+                    ->columnSpanFull()
+                    ->compact()
                     ->schema([
                         Forms\Components\TagsInput::make('exclude')
                             ->label('Exclude from Sync')
@@ -223,10 +232,10 @@ class EnvironmentsRelationManager extends RelationManager
                 CreateAction::make()
                     ->label('Add Environment'),
             ])
-            ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
+            ->recordActions(actions: [
+                DeleteAction::make()->button()->hiddenLabel(),
+                EditAction::make()->button()->hiddenLabel(),
+            ], position: RecordActionsPosition::BeforeCells)
             ->reorderable(false);
     }
 }
