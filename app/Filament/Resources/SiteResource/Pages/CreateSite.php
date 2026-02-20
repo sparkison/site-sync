@@ -20,7 +20,7 @@ class CreateSite extends CreateRecord
                 ->label('Discover from Path')
                 ->icon('heroicon-o-magnifying-glass')
                 ->color('gray')
-                ->form([
+                ->schema([
                     TextInput::make('path')
                         ->label('Local WordPress Path')
                         ->placeholder('/Users/me/Sites/my-wp-site')

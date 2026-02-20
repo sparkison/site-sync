@@ -35,11 +35,15 @@ class SiteResource extends Resource
         return $schema
             ->components([
                 Section::make('Site Details')
+                    ->compact()
+                    ->icon('heroicon-o-globe-alt')
+                    ->collapsible(fn($record): bool => $record !== null)
+                    ->collapsed(fn($record): bool => $record !== null)
+                    ->columnSpanFull()
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
-                            ->maxLength(255)
-                            ->columnSpanFull(),
+                            ->maxLength(255),
 
                         Forms\Components\Select::make('sql_adapter')
                             ->label('SQL Adapter')
@@ -47,6 +51,7 @@ class SiteResource extends Resource
                                 'wpcli' => 'WP-CLI (recommended)',
                                 'mysqldump' => 'mysqldump / mysql',
                             ])
+                            ->native(false)
                             ->default('wpcli')
                             ->required(),
 
@@ -70,7 +75,7 @@ class SiteResource extends Resource
                 Tables\Columns\TextColumn::make('sql_adapter')
                     ->label('SQL Adapter')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'wpcli' => 'success',
                         'mysqldump' => 'info',
                         default => 'gray',
@@ -94,12 +99,12 @@ class SiteResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->actions([
+            ->recordActions([
                 Action::make('sync')
                     ->label('Sync')
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
-                    ->form(fn (Site $record) => [
+                    ->schema(fn(Site $record) => [
                         Forms\Components\Select::make('from_environment_id')
                             ->label('From (Source)')
                             ->options($record->environments()->pluck('name', 'id'))
@@ -158,7 +163,7 @@ class SiteResource extends Resource
                 EditAction::make(),
                 DeleteAction::make(),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
