@@ -1,5 +1,5 @@
 <footer
-    class="fi-footer my-3 pt-4 pb-6 flex flex-wrap items-center justify-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 text-center p-2 gap-4 mx-auto w-full px-4 md:px-6 lg:px-8 max-w-screen-xl">
+    class="fi-footer flex flex-wrap items-center justify-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 text-center p-2 gap-4 mx-auto w-full px-4 md:px-6 lg:px-8 max-w-screen-xl">
     <span class="flex items-center gap-2">&copy; {{ date('Y') }} -
         <span class="flex items-center gap-2">
             <img src="/icon.png" alt="SiteSync logo" width="20" height="20">
