@@ -26,10 +26,10 @@ class AdminPanelProvider extends PanelProvider
         // Add footer view
         FilamentView::registerRenderHook(
             PanelsRenderHook::FOOTER,
-            fn() => view('footer')
+            fn () => view('footer')
         );
 
-        Filament::registerRenderHook('panels::body.end', fn() => Blade::render("@vite('resources/js/app.js')"));
+        Filament::registerRenderHook('panels::body.end', fn () => Blade::render("@vite('resources/js/app.js')"));
 
         return $panel
             ->default()
@@ -77,7 +77,7 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->sidebarFullyCollapsibleOnDesktop(false)
             ->brandName('m3u editor')
-            ->brandLogo(fn() => view('filament.admin.logo'))
+            ->brandLogo(fn () => view('filament.admin.logo'))
             ->favicon('/favicon.png')
             ->brandLogoHeight('2.5rem')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
