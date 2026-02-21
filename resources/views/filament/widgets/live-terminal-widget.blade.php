@@ -1,6 +1,6 @@
 <x-filament-widgets::widget>
-    <x-filament::section heading="Live Terminal" description="Real-time output from the most recent sync operation"
-        icon="heroicon-o-command-line">
+    <x-filament::section compact heading="Live Terminal"
+        description="Real-time output from the most recent sync operation" icon="heroicon-o-command-line">
 
         @php
             /** @var \App\Models\SyncLog|null $syncLog */
