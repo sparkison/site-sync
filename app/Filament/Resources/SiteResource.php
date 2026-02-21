@@ -43,8 +43,8 @@ class SiteResource extends Resource
                 Section::make('Site Details')
                     ->compact()
                     ->icon('heroicon-o-globe-alt')
-                    ->collapsible(fn ($record): bool => $record !== null)
-                    ->collapsed(fn ($record): bool => $record !== null)
+                    ->collapsible(fn($record): bool => $record !== null)
+                    ->collapsed(fn($record): bool => $record !== null)
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\TextInput::make('name')
@@ -81,7 +81,7 @@ class SiteResource extends Resource
                 Tables\Columns\TextColumn::make('sql_adapter')
                     ->label('SQL Adapter')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'wpcli' => 'success',
                         'mysqldump' => 'info',
                         default => 'gray',
@@ -109,11 +109,18 @@ class SiteResource extends Resource
                 DeleteAction::make()->button()->hiddenLabel(),
                 EditAction::make()->button()->hiddenLabel(),
 
+                Action::make('export')
+                    ->label('Export')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->url(fn(Site $record): string => route('sites.export', $record))
+                    ->openUrlInNewTab()
+                    ->button()->hiddenLabel(),
+
                 Action::make('sync')
                     ->label('Sync')
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
-                    ->schema(fn (Site $record) => [
+                    ->schema(fn(Site $record) => [
                         Forms\Components\Select::make('from_environment_id')
                             ->label('From (Source)')
                             ->options($record->environments()->pluck('name', 'id'))
@@ -170,7 +177,7 @@ class SiteResource extends Resource
 
                         ChildProcess::start(
                             cmd: [PHP_BINARY, 'artisan', 'sitesync:run', $syncLog->id],
-                            alias: 'sync-'.$syncLog->id,
+                            alias: 'sync-' . $syncLog->id,
                             cwd: base_path(),
                         );
 
@@ -203,7 +210,7 @@ class SiteResource extends Resource
     {
         return [
             'index' => Pages\ListSites::route('/'),
-            // 'create' => Pages\CreateSite::route('/create'),
+            'create' => Pages\CreateSite::route('/create'),
             'edit' => Pages\EditSite::route('/{record}/edit'),
         ];
     }

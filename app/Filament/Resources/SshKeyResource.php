@@ -36,43 +36,38 @@ class SshKeyResource extends Resource
     {
         return $schema
             ->components([
-                Section::make()
-                    ->columnSpanFull()
-                    ->schema([
-                        Forms\Components\TextInput::make('name')
-                            ->label('Key Name / Label')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('My Server Key'),
+                Forms\Components\TextInput::make('name')
+                    ->label('Key Name / Label')
+                    ->required()
+                    ->maxLength(255)
+                    ->placeholder('My Server Key'),
 
-                        Forms\Components\Select::make('type')
-                            ->label('Key Type')
-                            ->options([
-                                'file_path' => 'File Path (path to .pem / .pub key on this server)',
-                                'string' => 'Key Content (paste private key)',
-                            ])
-                            ->native(false)
-                            ->default('file_path')
-                            ->required()
-                            ->live(),
-
-                        Forms\Components\TextInput::make('value')
-                            ->label('Key File Path')
-                            ->placeholder('/root/.ssh/id_rsa or ~/.ssh/my_key')
-                            ->helperText('Absolute path to the private key file accessible from this server.')
-                            ->required()
-                            ->columnSpanFull()
-                            ->visible(fn (Get $get): bool => $get('type') === 'file_path'),
-
-                        Forms\Components\Textarea::make('value')
-                            ->label('Private Key Content')
-                            ->placeholder("-----BEGIN OPENSSH PRIVATE KEY-----\n...")
-                            ->rows(10)
-                            ->required()
-                            ->columnSpanFull()
-                            ->visible(fn (Get $get): bool => $get('type') === 'string'),
+                Forms\Components\Select::make('type')
+                    ->label('Key Type')
+                    ->options([
+                        'file_path' => 'File Path (path to .pem / .pub key on this server)',
+                        'string' => 'Key Content (paste private key)',
                     ])
-                    ->columns(2),
+                    ->native(false)
+                    ->default('file_path')
+                    ->required()
+                    ->live(),
+
+                Forms\Components\TextInput::make('value')
+                    ->label('Key File Path')
+                    ->placeholder('/root/.ssh/id_rsa or ~/.ssh/my_key')
+                    ->helperText('Absolute path to the private key file accessible from this server.')
+                    ->required()
+                    ->columnSpanFull()
+                    ->visible(fn(Get $get): bool => $get('type') === 'file_path'),
+
+                Forms\Components\Textarea::make('value')
+                    ->label('Private Key Content')
+                    ->placeholder("-----BEGIN OPENSSH PRIVATE KEY-----\n...")
+                    ->rows(10)
+                    ->required()
+                    ->columnSpanFull()
+                    ->visible(fn(Get $get): bool => $get('type') === 'string'),
             ]);
     }
 
@@ -88,12 +83,12 @@ class SshKeyResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
                         'file_path' => 'File Path',
                         'string' => 'Key Content',
                         default => $state,
                     })
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'file_path' => 'info',
                         'string' => 'success',
                         default => 'gray',
@@ -112,7 +107,7 @@ class SshKeyResource extends Resource
             ])
             ->recordActions([
                 DeleteAction::make()->button()->hiddenLabel(),
-                EditAction::make()->button()->hiddenLabel(),
+                EditAction::make()->slideOver()->button()->hiddenLabel(),
             ], position: RecordActionsPosition::BeforeCells)
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -126,7 +121,7 @@ class SshKeyResource extends Resource
         return [
             'index' => Pages\ListSshKeys::route('/'),
             // 'create' => Pages\CreateSshKey::route('/create'),
-            'edit' => Pages\EditSshKey::route('/{record}/edit'),
+            // 'edit' => Pages\EditSshKey::route('/{record}/edit'),
         ];
     }
 }
