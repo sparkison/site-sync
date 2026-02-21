@@ -153,8 +153,8 @@ return [
     'queue_workers' => [
         'default' => [
             'queues' => ['default'],
-            'memory_limit' => 128,
-            'timeout' => 60,
+            'memory_limit' => 1024, // 1 GB
+            'timeout' => 3600,
             'sleep' => 3,
         ],
     ],
@@ -163,11 +163,14 @@ return [
      * Define your own scripts to run before and after the build process.
      */
     'prebuild' => [
-        // 'npm run build',
+        'npm run build',
+        'php artisan optimize',
+        'php artisan filament:optimize',
     ],
 
     'postbuild' => [
-        // 'rm -rf public/build',
+        'php artisan optimize:clear',
+        'php artisan filament:filament:optimize-clear',
     ],
 
     /**
