@@ -62,7 +62,7 @@ class SshKeyResource extends Resource
                             ->helperText('Absolute path to the private key file accessible from this server.')
                             ->required()
                             ->columnSpanFull()
-                            ->visible(fn(Get $get): bool => $get('type') === 'file_path'),
+                            ->visible(fn (Get $get): bool => $get('type') === 'file_path'),
 
                         Forms\Components\Textarea::make('value')
                             ->label('Private Key Content')
@@ -70,7 +70,7 @@ class SshKeyResource extends Resource
                             ->rows(10)
                             ->required()
                             ->columnSpanFull()
-                            ->visible(fn(Get $get): bool => $get('type') === 'string'),
+                            ->visible(fn (Get $get): bool => $get('type') === 'string'),
                     ])
                     ->columns(2),
             ]);
@@ -88,12 +88,12 @@ class SshKeyResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
                         'file_path' => 'File Path',
                         'string' => 'Key Content',
                         default => $state,
                     })
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'file_path' => 'info',
                         'string' => 'success',
                         default => 'gray',
