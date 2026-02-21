@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\SyncLog;
 use App\Services\SyncService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class RunSyncCommand extends Command
@@ -15,6 +16,8 @@ class RunSyncCommand extends Command
 
     public function handle(SyncService $syncService): int
     {
+        Log::info('RunSyncCommand starting', ['syncLog' => $this->argument('syncLog')]);
+
         /** @var SyncLog|null $log */
         $log = SyncLog::find($this->argument('syncLog'));
 

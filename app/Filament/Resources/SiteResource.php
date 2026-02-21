@@ -20,6 +20,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Log;
 use Native\Desktop\Facades\ChildProcess;
 
 class SiteResource extends Resource
@@ -180,16 +181,30 @@ class SiteResource extends Resource
                             'status' => 'pending',
                         ]);
 
-                        ChildProcess::artisan(
-                            cmd: ['sitesync:run', $syncLog->id],
-                            alias: 'sync-'.$syncLog->id,
-                        );
+                        try {
+                            ChildProcess::artisan(
+                                cmd: ['sitesync:run', $syncLog->id],
+                                alias: 'sync-'.$syncLog->id,
+                            );
 
-                        Notification::make()
-                            ->success()
-                            ->title('Sync started')
-                            ->body("Syncing {$from->name} → {$to->name}. Watch the terminal on the dashboard for progress.")
-                            ->send();
+                            Notification::make()
+                                ->success()
+                                ->title('Sync started')
+                                ->body("Syncing {$from->name} → {$to->name}. Watch the terminal on the dashboard for progress.")
+                                ->send();
+                        } catch (\Throwable $e) {
+                            $syncLog->markFailed();
+                            Log::error('Failed to start sync child process', [
+                                'syncLog' => $syncLog->id,
+                                'error' => $e->getMessage(),
+                            ]);
+
+                            Notification::make()
+                                ->danger()
+                                ->title('Failed to start sync')
+                                ->body($e->getMessage())
+                                ->send();
+                        }
                     })
                     ->modalIcon('heroicon-o-arrow-path')
                     ->modalWidth('lg')
