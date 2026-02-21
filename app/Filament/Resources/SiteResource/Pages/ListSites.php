@@ -48,7 +48,7 @@ class ListSites extends ListRecords
                         Notification::make()
                             ->success()
                             ->title('Site imported')
-                            ->body("\"{$site->name}\" was imported with " . ($site->environments()->count()) . ' environment(s). Add any passwords or SSH keys manually.')
+                            ->body("\"{$site->name}\" was imported with ".($site->environments()->count()).' environment(s). Add any passwords or SSH keys manually.')
                             ->persistent()
                             ->send();
                     } catch (Throwable $e) {
