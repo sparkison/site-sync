@@ -1,10 +1,10 @@
 {
-    "name": "nativephp",
-    "version": "2.0.0",
-    "description": "A NativePHP Electron application",
+    "name": "sitesync-dev",
+    "version": "1.0.0",
+    "description": "A powerful tool to sync WordPress sites across environments with ease.",
     "main": "./out/main/index.js",
-    "author": "NativePHP",
-    "homepage": "https://nativephp.com",
+    "author": "Shaun Parkison",
+    "homepage": "https://github.com/sparkison/site-sync",
     "type": "module",
     "engines": {
         "node": ">=22.0.0"

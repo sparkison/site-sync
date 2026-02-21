@@ -16,12 +16,13 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use notwonderful\FilamentMoonlightTheme\MoonlightTheme;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        Filament::registerRenderHook('panels::body.end', fn () => Blade::render("@vite('resources/js/app.js')"));
+        Filament::registerRenderHook('panels::body.end', fn() => Blade::render("@vite('resources/js/app.js')"));
 
         return $panel
             ->default()
@@ -29,13 +30,14 @@ class AdminPanelProvider extends PanelProvider
             ->path('/')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->colors([
-                'primary' => Color::Slate,
+                'primary' => Color::Indigo,
+                'gray' => Color::Zinc,
             ])
-            ->darkMode(false)
+            ->darkMode(true, true)
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->sidebarCollapsibleOnDesktop()
             ->brandName('m3u editor')
-            ->brandLogo(fn () => view('filament.admin.logo'))
+            ->brandLogo(fn() => view('filament.admin.logo'))
             ->favicon('/favicon.png')
             ->brandLogoHeight('2.5rem')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

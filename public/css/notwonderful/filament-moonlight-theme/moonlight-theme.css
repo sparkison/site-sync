@@ -1,0 +1,938 @@
+/**
+ * Moonlight Theme for Filament PHP
+ * Based on JetBrains Moonlight Theme colors
+ * https://github.com/katarion/jetbrains-moonlight-theme
+ *
+ * IMPORTANT: This theme is designed for DARK MODE only.
+ * All styles are wrapped in .dark selector to ensure they only apply in dark mode.
+ */
+
+:root {
+    /* Moonlight Color Palette */
+    --moonlight-background: #1e2030;
+    --moonlight-background-alt: #1e2030;
+    --moonlight-shadow: #16161c;
+    --moonlight-accent: #2e303e;
+    --moonlight-accent-alt: #6c6f93;
+    --moonlight-border: #2f334d;
+    --moonlight-border-dark: #191a2a;
+    --moonlight-border-light: #444a73;
+
+    /* Foreground Colors */
+    --moonlight-foreground-bright: #d5def8;
+    --moonlight-foreground-bright-2: #c8d3f5;
+    --moonlight-foreground-main: #a9b8e8;
+    --moonlight-foreground-dim: #828bb8;
+    --moonlight-foreground-info: #5c6370;
+
+    /* Accent Colors */
+    --moonlight-accent-1: #fca7ea; /* Pink */
+    --moonlight-accent-2: #c4a2ff; /* Purple */
+    --moonlight-accent-3: #ffc777; /* Yellow/Orange */
+    --moonlight-accent-4: #78dbff; /* Cyan */
+    --moonlight-accent-5: #7af8ca; /* Green */
+
+    /* Surface Colors */
+    --moonlight-surface: #25354e;
+    --moonlight-surface-dark: #212337;
+
+    /* Interactive Colors */
+    --moonlight-hover: #2f334d;
+    --moonlight-selection: #444a73;
+    --moonlight-selection-inactive: #292E46;
+
+    /* Status Colors */
+    --moonlight-success: #50fa7b;
+    --moonlight-error: #ff5370;
+    --moonlight-warning: #ffc777;
+    --moonlight-info: #78dbff;
+}
+
+.dark .fi-body,
+.dark .fi-body:where(.dark, .dark *) {
+    --fi-primary-50: 252 167 234; /* #fca7ea */
+    --fi-primary-100: 250 147 228;
+    --fi-primary-200: 248 127 222;
+    --fi-primary-300: 246 107 216;
+    --fi-primary-400: 244 87 210;
+    --fi-primary-500: 252 167 234; /* Primary accent */
+    --fi-primary-600: 196 162 255; /* #c4a2ff */
+    --fi-primary-700: 140 157 255; /* #7cafff */
+    --fi-primary-800: 120 219 255; /* #78dbff */
+    --fi-primary-900: 122 248 202; /* #7af8ca */
+    --fi-primary-950: 122 248 202;
+}
+
+/* Background Colors */
+.dark .fi-body,
+.dark .fi-main,
+.dark .fi-sidebar,
+.dark .fi-topbar {
+    background-color: var(--moonlight-background);
+    color: var(--moonlight-foreground-bright);
+}
+
+/* Sidebar Styling */
+.dark .fi-sidebar {
+    background-color: var(--moonlight-background-alt);
+    border-right-color: var(--moonlight-border);
+}
+
+.dark .fi-sidebar-nav-item {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-sidebar-nav-item:hover {
+    background-color: var(--moonlight-hover);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-sidebar-nav-item-active {
+    background-color: var(--moonlight-selection);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    background-color: var(--moonlight-selection);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-label {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon {
+    color: var(--moonlight-foreground-bright);
+    background-color: transparent;
+}
+
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon svg,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon [x-ref="icon"] svg,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn svg,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn [x-ref="icon"] {
+    color: var(--moonlight-foreground-bright);
+    background-color: transparent;
+}
+
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon path,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon circle,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon rect,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon polygon,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon use,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon g,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn svg path,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn svg circle,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn svg rect,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn svg polygon,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn svg use,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn svg g,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn [x-ref="icon"] path,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn [x-ref="icon"] circle,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn [x-ref="icon"] rect,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn [x-ref="icon"] polygon,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn [x-ref="icon"] use,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn [x-ref="icon"] g {
+    fill: currentColor;
+    stroke: currentColor;
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-sidebar-item.fi-active svg * {
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn [x-ref="icon"] {
+    background-color: transparent;
+    background: none;
+}
+
+.dark .fi-sidebar-item.fi-active,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    --primary-400: var(--moonlight-foreground-bright);
+    --primary-500: var(--moonlight-foreground-bright);
+    --primary-600: var(--moonlight-foreground-bright);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-topbar {
+    background-color: var(--moonlight-background-alt);
+    border-bottom-color: var(--moonlight-border);
+}
+
+.dark .fi-btn {
+    background-color: var(--moonlight-accent);
+    color: var(--moonlight-foreground-bright);
+    border-color: var(--moonlight-border);
+}
+
+.dark .fi-btn:hover:not(:disabled) {
+    background-color: var(--moonlight-hover);
+    border-color: var(--moonlight-border-light);
+}
+
+.dark .fi-btn-primary {
+    background-color: var(--moonlight-selection);
+    color: var(--moonlight-foreground-bright);
+    border-color: var(--moonlight-border-light);
+}
+
+.dark .fi-btn-primary:hover:not(:disabled) {
+    background-color: var(--moonlight-hover);
+    border-color: var(--moonlight-border-light);
+}
+
+.dark .fi-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dark .fi-btn > .fi-icon,
+.dark .fi-btn:not(.fi-outlined).fi-color > .fi-icon {
+    color: currentColor;
+}
+
+/* Forms */
+.dark .fi-input {
+    background-color: var(--moonlight-background-alt);
+    color: var(--moonlight-foreground-bright);
+    border: 1px solid var(--moonlight-border);
+    border-radius: 0.375rem;
+}
+
+.dark .fi-input-wrp input {
+    background-color: transparent;
+    color: var(--moonlight-foreground-bright);
+    border: none;
+}
+
+.dark .fi-input-wrp textarea {
+    background-color: transparent;
+    color: var(--moonlight-foreground-bright);
+    border: none;
+    border-radius: 0.375rem;
+}
+
+.dark .fi-input:focus,
+.dark .fi-input-wrp input:focus,
+.dark .fi-input-wrp textarea:focus {
+    border-color: var(--moonlight-accent-4);
+    border-width: 1px;
+    outline: none;
+}
+
+.dark .fi-input::placeholder,
+.dark .fi-input-wrp input::placeholder,
+.dark .fi-input-wrp textarea::placeholder {
+    color: var(--moonlight-foreground-dim);
+}
+
+/* Input wrapper */
+.dark .fi-input-wrp {
+    border: 1px solid var(--moonlight-border);
+    border-radius: 0.375rem;
+    background-color: var(--moonlight-background-alt);
+}
+
+.dark .fi-input-wrp:focus-within {
+    border-color: var(--moonlight-accent-4);
+    box-shadow: 0 0 0 3px rgba(120, 219, 255, 0.1);
+}
+
+/* Textarea wrapper */
+.dark .fi-fo-textarea .fi-input-wrp,
+.dark .fi-input-wrp.fi-fo-textarea {
+    border: 1px solid var(--moonlight-border);
+    border-radius: 0.375rem;
+}
+
+.dark .fi-fo-textarea .fi-input-wrp:focus-within,
+.dark .fi-input-wrp.fi-fo-textarea:focus-within {
+    border-color: var(--moonlight-accent-4);
+    box-shadow: 0 0 0 3px rgba(120, 219, 255, 0.1);
+}
+
+/* Form Fields */
+.dark .fi-fo-field {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-fo-field-label {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-fo-field-label-content {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-input-wrp-content-ctn {
+    background-color: transparent;
+}
+
+.dark .fi-input-wrp textarea:focus {
+    border: none;
+    box-shadow: none;
+    outline: none;
+}
+
+/* Schema Components Text */
+.dark .fi-sc-text {
+    color: var(--moonlight-foreground-dim);
+}
+
+/* Tables */
+.dark .fi-ta-table {
+    background-color: var(--moonlight-background-alt);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-ta-ctn,
+.dark .fi-ta-ctn:where(.dark, .dark *) {
+    background-color: var(--moonlight-background-alt);
+    --tw-ring-color: rgba(47, 51, 77, 0.1); /* --moonlight-border with opacity */
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-ta-header {
+    background-color: var(--moonlight-accent);
+    color: var(--moonlight-foreground-bright);
+    border-bottom-color: var(--moonlight-border);
+}
+
+.dark .fi-ta-header-cell {
+    color: var(--moonlight-foreground-bright);
+    font-weight: 600;
+}
+
+.dark .fi-ta-header-cell button {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-ta-header-cell button:hover {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-ta-row {
+    border-bottom-color: var(--moonlight-border);
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-ta-row:hover {
+    background-color: var(--moonlight-hover);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-ta-row-selected {
+    background-color: var(--moonlight-selection);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-ta-cell {
+    color: inherit;
+}
+
+.dark .fi-ta-actions {
+    background-color: transparent;
+}
+
+.dark .fi-ta-row:hover td {
+    background-color: transparent;
+}
+
+/* Sections */
+.dark .fi-section {
+    background-color: var(--moonlight-background-alt);
+    border-color: var(--moonlight-border);
+    color: var(--moonlight-foreground-bright);
+    overflow: hidden;
+}
+
+.dark .fi-section-header {
+    background-color: transparent;
+    color: var(--moonlight-foreground-bright);
+    border-bottom-color: var(--moonlight-border);
+}
+
+.dark .fi-section-header-heading {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-section-content-ctn {
+    background-color: transparent;
+}
+
+.dark .fi-section-content {
+    background-color: transparent;
+    color: var(--moonlight-foreground-bright);
+}
+
+/* Modals */
+.dark .fi-modal-window {
+    background-color: var(--moonlight-background-alt);
+    border: 1px solid var(--moonlight-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.dark .fi-modal-header {
+    background-color: var(--moonlight-surface-dark);
+    color: var(--moonlight-foreground-bright);
+    border-bottom: 1px solid var(--moonlight-border);
+    padding-bottom: 1rem;
+}
+
+.dark .fi-modal-heading {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-modal-description {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-modal-content {
+    background-color: var(--moonlight-background-alt);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-modal-close-overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Badges */
+.dark .fi-badge {
+    background-color: var(--moonlight-accent);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-badge-success {
+    background-color: var(--moonlight-success);
+    color: var(--moonlight-background);
+}
+
+.dark .fi-badge-danger {
+    background-color: var(--moonlight-error);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-badge-warning {
+    background-color: var(--moonlight-warning);
+    color: var(--moonlight-background);
+}
+
+/* Links */
+.dark .fi-link {
+    color: var(--moonlight-accent-4);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.dark .fi-link:hover {
+    color: var(--moonlight-foreground-bright);
+    text-decoration: underline;
+}
+
+.dark .fi-link:focus {
+    color: var(--moonlight-accent-4);
+    outline: 2px solid var(--moonlight-accent-4);
+    outline-offset: 2px;
+}
+
+.dark .fi-link:visited {
+    color: var(--moonlight-accent-2);
+}
+
+/* Tabs - Schema Components */
+.dark .fi-sc-tabs.fi-contained {
+    background-color: var(--moonlight-background-alt);
+    border-color: var(--moonlight-border);
+    --tw-ring-color: rgba(47, 51, 77, 0.1); /* --moonlight-border with opacity */
+}
+
+.dark .fi-tabs.fi-contained {
+    background-color: transparent;
+}
+
+/* Tab Items */
+.dark .fi-tabs-item {
+    color: var(--moonlight-foreground-main);
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.dark .fi-tabs-item:hover {
+    background-color: var(--moonlight-hover);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-tabs-item.fi-active {
+    background-color: var(--moonlight-selection); /* #444a73 - как активный элемент сайдбара */
+    color: var(--moonlight-foreground-bright); /* Светлый текст */
+    border-color: var(--moonlight-border-light);
+    border-bottom: 2px solid var(--moonlight-accent-4); /* Подчеркивание голубым */
+}
+
+.dark .fi-tabs-item-label {
+    color: inherit;
+}
+
+.dark .fi-tabs-item.fi-active .fi-tabs-item-label {
+    color: var(--moonlight-foreground-bright);
+    font-weight: 600;
+}
+
+/* Tab Panels */
+.dark .fi-sc-tabs-tab {
+    background-color: var(--moonlight-background-alt);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-sc-tabs-tab.fi-active {
+    background-color: var(--moonlight-background-alt);
+}
+
+/* Dropdown Panel */
+.dark .fi-dropdown-panel,
+.dark .fi-dropdown-panel:where(.dark, .dark *) {
+    background-color: var(--moonlight-background-alt);
+    border-color: var(--moonlight-border);
+    --tw-ring-color: rgba(47, 51, 77, 0.5);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-dropdown-item {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-dropdown-item:hover {
+    background-color: var(--moonlight-hover);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-dropdown-panel .fi-input,
+.dark .fi-dropdown-panel .fi-input-wrp input,
+.dark .fi-dropdown-panel .fi-input-wrp select,
+.dark .fi-dropdown-panel .fi-select {
+    background-color: var(--moonlight-accent);
+    color: var(--moonlight-foreground-bright);
+    border-color: var(--moonlight-border);
+}
+
+.dark .fi-dropdown-panel .fi-input:focus,
+.dark .fi-dropdown-panel .fi-input-wrp input:focus,
+.dark .fi-dropdown-panel .fi-input-wrp select:focus,
+.dark .fi-dropdown-panel .fi-select:focus {
+    border-color: var(--moonlight-accent-4);
+    box-shadow: 0 0 0 3px rgba(120, 219, 255, 0.1);
+}
+
+.dark .fi-dropdown-panel .fi-input::placeholder,
+.dark .fi-dropdown-panel .fi-input-wrp input::placeholder {
+    color: var(--moonlight-foreground-dim);
+}
+
+.dark .fi-dropdown-panel .fi-fo-field-label,
+.dark .fi-dropdown-panel .fi-fo-field-label-content {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-dropdown-panel .fi-btn {
+    background-color: var(--moonlight-accent);
+    color: var(--moonlight-foreground-bright);
+    border-color: var(--moonlight-border);
+}
+
+.dark .fi-dropdown-panel .fi-btn:hover:not(:disabled) {
+    background-color: var(--moonlight-hover);
+    border-color: var(--moonlight-border-light);
+}
+
+.dark .fi-dropdown-panel .fi-btn-primary {
+    background-color: var(--moonlight-accent-4);
+    color: var(--moonlight-background);
+    border-color: var(--moonlight-accent-4);
+}
+
+.dark .fi-dropdown-panel .fi-btn-primary:hover:not(:disabled) {
+    background-color: var(--moonlight-accent-4);
+    opacity: 0.9;
+    filter: brightness(0.95);
+}
+
+.dark .fi-dropdown-panel .fi-link {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-dropdown-panel .fi-link:hover {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-no-notification {
+    background-color: var(--moonlight-background-alt);
+    border: 1px solid var(--moonlight-border);
+    color: var(--moonlight-foreground-bright);
+    border-radius: 0.5rem;
+}
+
+.dark .fi-no-notification-title {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-no-notification-body {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-no-notification-date {
+    color: var(--moonlight-foreground-dim);
+}
+
+.dark .fi-no-notification-close-btn {
+    color: var(--moonlight-foreground-dim);
+}
+
+.dark .fi-no-notification-close-btn:hover {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-no-notification.fi-status-success {
+    border-left: 3px solid var(--moonlight-success);
+}
+
+.dark .fi-no-notification.fi-status-danger {
+    border-left: 3px solid var(--moonlight-error);
+}
+
+.dark .fi-no-notification.fi-status-warning {
+    border-left: 3px solid var(--moonlight-warning);
+}
+
+.dark .fi-no-notification.fi-status-info {
+    border-left: 3px solid var(--moonlight-info);
+}
+
+.dark .fi-no-notification-icon {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-no-notification.fi-status-success .fi-no-notification-icon {
+    color: var(--moonlight-success);
+}
+
+.dark .fi-no-notification.fi-status-danger .fi-no-notification-icon {
+    color: var(--moonlight-error);
+}
+
+.dark .fi-no-notification.fi-status-warning .fi-no-notification-icon {
+    color: var(--moonlight-warning);
+}
+
+.dark .fi-no-notification.fi-status-info .fi-no-notification-icon {
+    color: var(--moonlight-info);
+}
+
+/* Breadcrumbs */
+.dark .fi-breadcrumbs {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-breadcrumbs-item {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-breadcrumbs-item:hover {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-breadcrumbs-separator {
+    color: var(--moonlight-foreground-dim);
+}
+
+/* Search Field */
+.dark .fi-search-field {
+    background-color: var(--moonlight-background-alt);
+    border-color: var(--moonlight-border);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-search-field:focus,
+.dark .fi-search-field:focus-within {
+    border-color: var(--moonlight-accent-4);
+    box-shadow: 0 0 0 3px rgba(120, 219, 255, 0.1);
+}
+
+.dark .fi-search-field input {
+    background-color: transparent;
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-search-field input::placeholder {
+    color: var(--moonlight-foreground-dim);
+}
+
+.dark .fi-search-field-icon {
+    color: var(--moonlight-foreground-main);
+}
+
+/* Global Search */
+.dark .fi-global-search-field {
+    background-color: var(--moonlight-background-alt);
+    border: 1px solid var(--moonlight-border);
+    border-radius: 0.5rem;
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-global-search-field:focus-within {
+    border-color: var(--moonlight-accent-4);
+    box-shadow: 0 0 0 3px rgba(120, 219, 255, 0.1);
+}
+
+.dark .fi-global-search-field .fi-input-wrp,
+.dark .fi-global-search-field .fi-input-wrp:focus-within {
+    border: none;
+    box-shadow: none;
+    outline: none;
+    background-color: transparent;
+    --tw-ring-shadow: 0 0 #0000;
+    --tw-ring-color: transparent;
+    --tw-shadow: 0 0 #0000;
+}
+
+.dark .fi-global-search-field input {
+    background-color: transparent;
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-global-search-field input::placeholder {
+    color: var(--moonlight-foreground-dim);
+}
+
+/* Global Search Results */
+.dark .fi-global-search-results-ctn {
+    background-color: var(--moonlight-background-alt);
+    border: 1px solid var(--moonlight-border);
+    border-radius: 0.5rem;
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-global-search-no-results-message {
+    color: var(--moonlight-foreground-dim);
+}
+
+.dark .fi-global-search-result-group-header {
+    color: var(--moonlight-foreground-dim);
+    background-color: var(--moonlight-surface);
+    font-weight: 600;
+}
+
+.dark .fi-global-search-result-link {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-global-search-result-link:hover {
+    background-color: var(--moonlight-hover);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-global-search-result-heading {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-global-search-result-detail-label {
+    color: var(--moonlight-foreground-dim);
+}
+
+.dark .fi-global-search-result-detail-value {
+    color: var(--moonlight-foreground-main);
+}
+
+/* Empty State */
+.dark .fi-empty-state {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-empty-state-icon {
+    color: var(--moonlight-foreground-dim);
+    background-color: var(--moonlight-accent);
+}
+
+.dark .fi-empty-state-heading {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-empty-state-description {
+    color: var(--moonlight-foreground-main);
+}
+
+/* Page Header */
+.dark .fi-header {
+    background-color: transparent;
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-header-heading {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-header-subheading {
+    color: var(--moonlight-foreground-main);
+}
+
+/* Toggles */
+.dark .fi-toggle.fi-toggle-on {
+    background-color: var(--moonlight-selection);
+}
+
+.dark .fi-toggle.fi-toggle-off {
+    background-color: var(--moonlight-accent);
+}
+
+/* Checkboxes and Radio Buttons */
+.dark .fi-checkbox input,
+.dark .fi-radio input {
+    background-color: var(--moonlight-background-alt);
+    border-color: var(--moonlight-border);
+}
+
+.dark .fi-checkbox input:checked,
+.dark .fi-radio input:checked {
+    background-color: var(--moonlight-accent-4);
+    border-color: var(--moonlight-accent-4);
+}
+
+.dark .fi-checkbox input:focus,
+.dark .fi-radio input:focus {
+    border-color: var(--moonlight-accent-4);
+    box-shadow: 0 0 0 3px rgba(120, 219, 255, 0.1);
+}
+
+/* Checkbox and Radio inside dropdown */
+.dark .fi-dropdown-panel .fi-checkbox input,
+.dark .fi-dropdown-panel .fi-radio input {
+    background-color: var(--moonlight-accent);
+    border-color: var(--moonlight-border);
+}
+
+.dark .fi-dropdown-panel .fi-checkbox input:checked,
+.dark .fi-dropdown-panel .fi-radio input:checked {
+    background-color: var(--moonlight-accent-4);
+    border-color: var(--moonlight-accent-4);
+}
+
+/* Select Dropdowns */
+.dark .fi-select {
+    background-color: var(--moonlight-background-alt);
+    color: var(--moonlight-foreground-bright);
+    border-color: var(--moonlight-border);
+}
+
+.dark .fi-select:focus {
+    border-color: var(--moonlight-accent-4);
+    box-shadow: 0 0 0 3px rgba(120, 219, 255, 0.1);
+}
+
+.dark .fi-select-option {
+    background-color: var(--moonlight-background-alt);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-select-option:hover {
+    background-color: var(--moonlight-hover);
+}
+
+.dark .fi-select-option-selected {
+    background-color: var(--moonlight-selection);
+    color: var(--moonlight-foreground-bright);
+}
+
+/* Select inside dropdown panel */
+.dark .fi-dropdown-panel .fi-select-option {
+    background-color: var(--moonlight-accent);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-dropdown-panel .fi-select-option:hover {
+    background-color: var(--moonlight-hover);
+}
+
+.dark .fi-dropdown-panel .fi-select-option-selected {
+    background-color: var(--moonlight-selection);
+}
+
+/* Scrollbars */
+.dark ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: var(--moonlight-background);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: var(--moonlight-accent-alt);
+    border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: var(--moonlight-border-light);
+}
+
+/* Code Blocks */
+.dark code,
+.dark pre {
+    background-color: var(--moonlight-accent);
+    color: var(--moonlight-foreground-bright);
+    border-color: var(--moonlight-border);
+}
+
+/* Loading Indicators */
+.dark .fi-loading-indicator {
+    color: var(--moonlight-accent-4);
+}
+
+/* Tooltips */
+.dark .fi-tooltip {
+    background-color: var(--moonlight-background-alt);
+    color: var(--moonlight-foreground-bright);
+    border-color: var(--moonlight-border);
+}
+
+/* Widgets - Stats Overview */
+.dark .fi-wi-stats-overview-stat {
+    background-color: var(--moonlight-surface);
+    border: 1px solid var(--moonlight-border);
+    color: var(--moonlight-foreground-bright);
+    --tw-ring-color: rgba(47, 51, 77, 0.5);
+}
+
+.dark .fi-wi-stats-overview-stat-label {
+    color: var(--moonlight-foreground-main);
+}
+
+.dark .fi-wi-stats-overview-stat-value {
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-wi-stats-overview-stat-description {
+    color: var(--moonlight-foreground-dim);
+}
+
+/* Widgets - Chart */
+.dark .fi-wi-chart {
+    background-color: var(--moonlight-surface);
+    border-color: var(--moonlight-border);
+    color: var(--moonlight-foreground-bright);
+}
+
+.dark .fi-wi-chart-text-color {
+    color: var(--moonlight-foreground-dim);
+}
+
+.dark .fi-wi-chart-grid-color {
+    color: var(--moonlight-border);
+}
+
+.dark {
+    --primary-400: var(--moonlight-foreground-bright);
+    --primary-500: var(--moonlight-foreground-bright);
+}
