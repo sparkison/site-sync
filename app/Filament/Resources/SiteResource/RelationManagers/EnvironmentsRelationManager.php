@@ -87,7 +87,7 @@ class EnvironmentsRelationManager extends RelationManager
                                                 ->title('No wp-config.php found at that path.')
                                                 ->send();
                                         }
-                                    })
+                                    })->hidden(fn(Get $get): bool => (bool) !$get('is_local'))
                             ),
                     ])
                     ->columns(2),
@@ -131,7 +131,7 @@ class EnvironmentsRelationManager extends RelationManager
                             ->label('Extra mysqldump Options')
                             ->placeholder('--max_allowed_packet=1G')
                             ->columnSpanFull()
-                            ->visible(fn () => $this->getOwnerRecord()->sql_adapter === 'mysqldump'),
+                            ->visible(fn() => $this->getOwnerRecord()->sql_adapter === 'mysqldump'),
                     ])
                     ->columns(3),
 
@@ -176,7 +176,7 @@ class EnvironmentsRelationManager extends RelationManager
                             ->columnSpanFull(),
                     ])
                     ->columns(3)
-                    ->hidden(fn (Get $get): bool => (bool) $get('is_local')),
+                    ->hidden(fn(Get $get): bool => (bool) $get('is_local')),
 
                 Section::make('Exclude Patterns')
                     ->columnSpanFull()
@@ -186,9 +186,25 @@ class EnvironmentsRelationManager extends RelationManager
                             ->label('Exclude from Sync')
                             ->placeholder('Add pattern (e.g. wp-content/plugins/woocommerce/)')
                             ->helperText('These patterns will be passed to rsync as --exclude flags. Common patterns like .git/, node_modules/, wp-config.php are excluded by default.')
+                            ->default([
+                                '.DS_Store',
+                                '.git/',
+                                '.gitignore',
+                                '.gitmodules',
+                                '.env',
+                                'node_modules/',
+                                'bin/',
+                                'tmp/*',
+                                'Movefile',
+                                'movefile',
+                                'movefile.yml',
+                                'movefile.yaml',
+                                'wp-config.php',
+                                'wp-content/*.sql.gz',
+                                '*.orig'
+                            ])
                             ->columnSpanFull(),
-                    ])
-                    ->collapsed(),
+                    ]),
             ]);
     }
 
@@ -199,26 +215,22 @@ class EnvironmentsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('name')
                     ->label('Environment')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match (strtolower($state)) {
                         'local' => 'success',
                         'staging' => 'warning',
                         'production' => 'danger',
                         default => 'gray',
                     }),
 
-                Tables\Columns\IconColumn::make('is_local')
-                    ->label('Local')
-                    ->boolean(),
-
                 Tables\Columns\TextColumn::make('vhost')
                     ->label('URL')
-                    ->url(fn ($record) => $record->vhost)
+                    ->url(fn($record) => $record->vhost)
                     ->openUrlInNewTab(),
 
                 Tables\Columns\TextColumn::make('wordpress_path')
                     ->label('Path')
                     ->limit(40)
-                    ->tooltip(fn ($record) => $record->wordpress_path),
+                    ->tooltip(fn($record) => $record->wordpress_path),
 
                 Tables\Columns\TextColumn::make('ssh_host')
                     ->label('SSH Host')
