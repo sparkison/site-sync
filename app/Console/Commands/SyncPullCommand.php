@@ -13,9 +13,14 @@ class SyncPullCommand extends Command
         {--from= : Source environment name (required)}
         {--to=local : Target environment name}
         {--db : Sync database}
-        {--files : Sync WordPress files (themes/plugins/uploads)}
+        {--themes : Sync wp-content/themes/}
+        {--plugins : Sync wp-content/plugins/}
+        {--mu-plugins : Sync wp-content/mu-plugins/}
+        {--uploads : Sync wp-content/uploads/}
+        {--files : Sync themes, plugins and uploads (alias for --themes --plugins --uploads)}
         {--core : Sync WordPress core}
-        {--all : Sync everything (db + files + core)}';
+        {--all : Sync everything (db + core + themes + plugins + mu-plugins + uploads)}
+        {--path=* : Arbitrary path(s) relative to the WordPress root}';
 
     protected $description = 'Pull WordPress site content from one environment to another';
 
@@ -93,13 +98,31 @@ class SyncPullCommand extends Command
         if ($this->option('db')) {
             $scope[] = 'db';
         }
+        if ($this->option('themes')) {
+            $scope[] = 'themes';
+        }
+        if ($this->option('plugins')) {
+            $scope[] = 'plugins';
+        }
+        if ($this->option('mu-plugins')) {
+            $scope[] = 'mu-plugins';
+        }
+        if ($this->option('uploads')) {
+            $scope[] = 'uploads';
+        }
         if ($this->option('files')) {
-            $scope[] = 'files';
+            array_push($scope, 'themes', 'plugins', 'uploads');
         }
         if ($this->option('core')) {
             $scope[] = 'core';
         }
 
-        return empty($scope) ? ['all'] : $scope;
+        foreach ($this->option('path') as $path) {
+            if ($path !== '') {
+                $scope[] = $path;
+            }
+        }
+
+        return empty($scope) ? ['all'] : array_values(array_unique($scope));
     }
 }

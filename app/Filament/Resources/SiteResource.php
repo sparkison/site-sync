@@ -151,13 +151,21 @@ class SiteResource extends Resource
                             ->label('What to sync')
                             ->options([
                                 'db' => 'Database',
-                                'files' => 'WordPress Files (themes/plugins/uploads)',
+                                'themes' => 'Themes',
+                                'plugins' => 'Plugins',
+                                'mu-plugins' => 'MU-Plugins',
+                                'uploads' => 'Uploads',
                                 'core' => 'WordPress Core',
                                 'all' => 'Everything',
                             ])
                             ->default(['db'])
-                            ->columns(2)
-                            ->required(),
+                            ->columns(2),
+
+                        Forms\Components\TagsInput::make('custom_paths')
+                            ->label('Custom paths')
+                            ->placeholder('backups, wp-content/plugins/my-plugin, …')
+                            ->helperText('Relative to the WordPress root. Press Enter to add each path.')
+                            ->splitKeys(['Enter', 'Tab', ',']),
                     ])
                     ->action(function (Site $record, array $data): void {
                         $from = $record->environments()->find($data['from_environment_id']);
@@ -172,12 +180,17 @@ class SiteResource extends Resource
                             return;
                         }
 
+                        $scope = array_values(array_unique(array_filter(array_merge(
+                            $data['scope'] ?? [],
+                            $data['custom_paths'] ?? [],
+                        ))));
+
                         $syncLog = SyncLog::create([
                             'site_id' => $record->id,
                             'from_environment_id' => $from->id,
                             'to_environment_id' => $to->id,
                             'direction' => $data['direction'],
-                            'scope' => $data['scope'],
+                            'scope' => $scope,
                             'status' => 'pending',
                         ]);
 

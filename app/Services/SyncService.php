@@ -47,11 +47,21 @@ class SyncService
         $this->runSync($source, $target, 'pull', $scope);
     }
 
+    private const KNOWN_SCOPES = ['db', 'core', 'themes', 'plugins', 'mu-plugins', 'uploads', 'files'];
+
     private function runSync(Environment $from, Environment $to, string $direction, array $scope): void
     {
         if (in_array('all', $scope)) {
-            $scope = ['db', 'core', 'files'];
+            $scope = ['db', 'core', 'themes', 'plugins', 'mu-plugins', 'uploads'];
         }
+
+        // Expand legacy 'files' to granular wp-content directories
+        if (in_array('files', $scope)) {
+            $scope = array_filter($scope, fn (string $s): bool => $s !== 'files');
+            $scope = array_merge(array_values($scope), ['themes', 'plugins', 'uploads']);
+        }
+
+        $scope = array_unique($scope);
 
         if (in_array('db', $scope)) {
             $this->output("=== Syncing Database ===\n");
@@ -63,9 +73,16 @@ class SyncService
             $this->syncCore($from, $to, $direction);
         }
 
-        if (in_array('files', $scope)) {
-            $this->output("=== Syncing WordPress Files (themes/plugins/uploads) ===\n");
-            $this->syncFiles($from, $to, $direction);
+        foreach (['themes', 'plugins', 'mu-plugins', 'uploads'] as $wpContentDir) {
+            if (in_array($wpContentDir, $scope)) {
+                $this->output("=== Syncing wp-content/{$wpContentDir}/ ===\n");
+                $this->syncWpContentDirectory($from, $to, $wpContentDir);
+            }
+        }
+
+        foreach (array_diff($scope, self::KNOWN_SCOPES) as $customPath) {
+            $this->output("=== Syncing custom path: {$customPath} ===\n");
+            $this->syncCustomPath($from, $to, $customPath);
         }
     }
 
@@ -153,6 +170,44 @@ class SyncService
     {
         $sourcePath = rtrim($from->wordpress_path, '/').'/wp-content/';
         $targetPath = rtrim($to->wordpress_path, '/').'/wp-content/';
+
+        if (! $from->is_local) {
+            $sourcePath = "{$from->ssh_user}@{$from->ssh_host}:{$sourcePath}";
+        }
+
+        if (! $to->is_local) {
+            $targetPath = "{$to->ssh_user}@{$to->ssh_host}:{$targetPath}";
+        }
+
+        $remoteEnv = $from->is_local ? $to : $from;
+        $this->runRsync($sourcePath, $targetPath, $remoteEnv, $from, $to);
+    }
+
+    private function syncWpContentDirectory(Environment $from, Environment $to, string $directory): void
+    {
+        $sourcePath = rtrim($from->wordpress_path, '/').'/wp-content/'.$directory.'/';
+        $targetPath = rtrim($to->wordpress_path, '/').'/wp-content/'.$directory.'/';
+
+        if (! $from->is_local) {
+            $sourcePath = "{$from->ssh_user}@{$from->ssh_host}:{$sourcePath}";
+        }
+
+        if (! $to->is_local) {
+            $targetPath = "{$to->ssh_user}@{$to->ssh_host}:{$targetPath}";
+        }
+
+        $remoteEnv = $from->is_local ? $to : $from;
+        $this->runRsync($sourcePath, $targetPath, $remoteEnv, $from, $to);
+    }
+
+    private function syncCustomPath(Environment $from, Environment $to, string $path): void
+    {
+        $cleanPath = trim($path, '/');
+        $sourcePath = rtrim($from->wordpress_path, '/').'/'.$cleanPath;
+        $parentDir = dirname($cleanPath);
+        $targetPath = $parentDir === '.'
+            ? rtrim($to->wordpress_path, '/').'/'
+            : rtrim($to->wordpress_path, '/').'/'.$parentDir.'/';
 
         if (! $from->is_local) {
             $sourcePath = "{$from->ssh_user}@{$from->ssh_host}:{$sourcePath}";
