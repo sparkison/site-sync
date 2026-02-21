@@ -175,10 +175,9 @@ class SiteResource extends Resource
                             'status' => 'pending',
                         ]);
 
-                        ChildProcess::start(
-                            cmd: [PHP_BINARY, 'artisan', 'sitesync:run', $syncLog->id],
+                        ChildProcess::artisan(
+                            cmd: ['sitesync:run', $syncLog->id],
                             alias: 'sync-'.$syncLog->id,
-                            cwd: base_path(),
                         );
 
                         Notification::make()
