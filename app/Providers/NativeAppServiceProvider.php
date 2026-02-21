@@ -18,7 +18,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             ->width(1200)
             ->height(800)
             ->minWidth(900)
-            ->minHeight(600)
+            ->minHeight(750)
             ->titleBarHiddenInset();
     }
 
