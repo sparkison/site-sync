@@ -14,6 +14,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -111,28 +112,32 @@ class SiteResource extends Resource
 
                 Action::make('export')
                     ->label('Export')
+                    ->tooltip('Export this site and its environments to a JSON file. Sensitive fields (passwords) are not included in exports and will need to be added manually when importing.')
                     ->icon('heroicon-o-arrow-up-tray')
                     ->url(fn (Site $record): string => route('sites.export', $record))
-                    ->openUrlInNewTab()
                     ->button()->hiddenLabel(),
 
                 Action::make('sync')
                     ->label('Sync')
+                    ->tooltip('Sync data between two environments of this site. Watch the terminal on the dashboard for progress and output.')
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
                     ->schema(fn (Site $record) => [
-                        Forms\Components\Select::make('from_environment_id')
-                            ->label('From (Source)')
-                            ->options($record->environments()->pluck('name', 'id'))
-                            ->required()
-                            ->searchable(),
+                        Schemas\Components\Grid::make()
+                            ->columns(2)
+                            ->schema([
+                                Forms\Components\Select::make('from_environment_id')
+                                    ->label('From (Source)')
+                                    ->options($record->environments()->pluck('name', 'id'))
+                                    ->required()
+                                    ->searchable(),
 
-                        Forms\Components\Select::make('to_environment_id')
-                            ->label('To (Target)')
-                            ->options($record->environments()->pluck('name', 'id'))
-                            ->required()
-                            ->searchable(),
-
+                                Forms\Components\Select::make('to_environment_id')
+                                    ->label('To (Target)')
+                                    ->options($record->environments()->pluck('name', 'id'))
+                                    ->required()
+                                    ->searchable(),
+                            ]),
                         Forms\Components\Select::make('direction')
                             ->options([
                                 'push' => 'Push (source → target)',
@@ -186,6 +191,7 @@ class SiteResource extends Resource
                             ->body("Syncing {$from->name} → {$to->name}. Watch the terminal on the dashboard for progress.")
                             ->send();
                     })
+                    ->modalIcon('heroicon-o-arrow-path')
                     ->modalWidth('lg')
                     ->button()->hiddenLabel(),
             ], position: RecordActionsPosition::BeforeCells)
