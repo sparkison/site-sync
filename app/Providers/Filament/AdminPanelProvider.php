@@ -35,6 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->darkMode(true, true)
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->sidebarCollapsibleOnDesktop()
+            ->sidebarFullyCollapsibleOnDesktop(false)
             ->brandName('m3u editor')
             ->brandLogo(fn () => view('filament.admin.logo'))
             ->favicon('/favicon.png')
