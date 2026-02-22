@@ -3,6 +3,9 @@
 namespace App\Filament\Resources\SiteResource\RelationManagers;
 
 use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -17,7 +20,7 @@ class SyncLogsRelationManager extends RelationManager
 
     public function isReadOnly(): bool
     {
-        return true;
+        return false;
     }
 
     public function form(Schema $schema): Schema
@@ -72,6 +75,7 @@ class SyncLogsRelationManager extends RelationManager
                     ->sortable(),
             ])
             ->recordActions([
+                DeleteAction::make()->button()->hiddenLabel(),
                 Action::make('view_output')
                     ->label('Output')
                     ->icon('heroicon-o-command-line')
@@ -81,6 +85,11 @@ class SyncLogsRelationManager extends RelationManager
                     ->modalCancelActionLabel('Close')
                     ->button()->hiddenLabel(),
             ], position: RecordActionsPosition::BeforeCells)
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ])
             ->defaultSort('created_at', 'desc')
             ->paginated([10, 25]);
     }

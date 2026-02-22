@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\SiteResource\Pages;
 use App\Filament\Resources\SiteResource\RelationManagers;
+use App\Jobs\SyncJob;
 use App\Models\Site;
 use App\Models\SyncLog;
 use Filament\Actions\Action;
@@ -20,8 +21,6 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Log;
-use Native\Desktop\Facades\ChildProcess;
 
 class SiteResource extends Resource
 {
@@ -194,30 +193,13 @@ class SiteResource extends Resource
                             'status' => 'pending',
                         ]);
 
-                        try {
-                            ChildProcess::artisan(
-                                cmd: ['sitesync:run', $syncLog->id],
-                                alias: 'sync-'.$syncLog->id,
-                            );
+                        SyncJob::dispatch($syncLog);
 
-                            Notification::make()
-                                ->success()
-                                ->title('Sync started')
-                                ->body("Syncing {$from->name} → {$to->name}. Watch the terminal on the dashboard for progress.")
-                                ->send();
-                        } catch (\Throwable $e) {
-                            $syncLog->markFailed();
-                            Log::error('Failed to start sync child process', [
-                                'syncLog' => $syncLog->id,
-                                'error' => $e->getMessage(),
-                            ]);
-
-                            Notification::make()
-                                ->danger()
-                                ->title('Failed to start sync')
-                                ->body($e->getMessage())
-                                ->send();
-                        }
+                        Notification::make()
+                            ->success()
+                            ->title('Sync queued')
+                            ->body("Syncing {$from->name} → {$to->name}. Check sync history for progress.")
+                            ->send();
                     })
                     ->modalIcon('heroicon-o-arrow-path')
                     ->modalWidth('lg')
