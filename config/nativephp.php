@@ -170,7 +170,7 @@ return [
 
     'postbuild' => [
         'php artisan optimize:clear',
-        'php artisan filament:filament:optimize-clear',
+        'php artisan filament:optimize-clear',
     ],
 
     /**
