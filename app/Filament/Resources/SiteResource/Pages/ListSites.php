@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SiteResource\Pages;
 
 use App\Filament\Resources\SiteResource;
+use App\Filament\Widgets\LiveTerminalWidget;
 use App\Services\SiteExportImportService;
 use Filament\Actions;
 use Filament\Forms;
@@ -15,6 +16,13 @@ class ListSites extends ListRecords
 {
     protected static string $resource = SiteResource::class;
 
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            LiveTerminalWidget::class,
+        ];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -25,7 +33,7 @@ class ListSites extends ListRecords
                 ->modalWidth('md')
                 ->modalHeading('Import Site')
                 ->modalDescription('Upload a SiteSync export file (.json) to import a site and its environments. Sensitive fields (passwords) are not included in exports and will need to be added manually.')
-                ->form([
+                ->schema([
                     Forms\Components\FileUpload::make('import_file')
                         ->label('Export File (.json)')
                         ->acceptedFileTypes(['application/json', 'text/plain', 'text/json'])
