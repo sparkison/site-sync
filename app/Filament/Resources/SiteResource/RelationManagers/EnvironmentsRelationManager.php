@@ -248,13 +248,15 @@ class EnvironmentsRelationManager extends RelationManager
                     ->label('Add Environment'),
             ])
             ->recordActions(actions: [
+                DeleteAction::make()->button()->hiddenLabel(),
+                EditAction::make()->button()->hiddenLabel(),
                 Action::make('testConnection')
                     ->label('Test Connection')
-                    ->tooltip('Test SSH connectivity to this environment')
+                    ->tooltip(fn (Environment $record) => $record->is_local ? 'Local environment, no SSH needed' : 'Test SSH connectivity to this environment')
                     ->icon('heroicon-o-signal')
                     ->color('gray')
                     ->button()->hiddenLabel()
-                    ->hidden(fn (Environment $record): bool => $record->is_local)
+                    ->disabled(fn (Environment $record): bool => $record->is_local)
                     ->action(function (Environment $record): void {
                         $result = app(SyncService::class)->testConnection($record);
 
@@ -272,8 +274,6 @@ class EnvironmentsRelationManager extends RelationManager
                                 ->send();
                         }
                     }),
-                DeleteAction::make()->button()->hiddenLabel(),
-                EditAction::make()->button()->hiddenLabel(),
             ], position: RecordActionsPosition::BeforeCells)
             ->reorderable(false);
     }

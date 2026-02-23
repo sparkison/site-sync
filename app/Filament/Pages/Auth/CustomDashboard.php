@@ -92,6 +92,7 @@ class CustomDashboard extends Dashboard
 
                         if (! $from || ! $to) {
                             DesktopNotification::title('Invalid environments selected.')
+                                ->message('Please check your selections and try again.')
                                 ->show();
 
                             return;
@@ -114,7 +115,7 @@ class CustomDashboard extends Dashboard
                         SyncJob::dispatch($syncLog);
 
                         DesktopNotification::title('Sync queued')
-                            ->message("Syncing {$from->name} → {$to->name}. Check sync history for progress.")
+                            ->message("Syncing {$record->name}: {$from->name} → {$to->name}. Check sync history for progress.")
                             ->show();
                     } catch (\Throwable $e) {
                         DesktopNotification::title('Failed to start sync')

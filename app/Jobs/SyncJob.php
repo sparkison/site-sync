@@ -41,14 +41,16 @@ class SyncJob implements ShouldQueue
 
             $log->markCompleted();
 
-            DesktopNotification::title('Sync completed successfully.')
+            DesktopNotification::title('Sync completed')
+                ->message("{$log->fromEnvironment->name} → {$log->toEnvironment->name}")
                 ->show();
 
         } catch (Throwable $e) {
             $log->appendOutput("\n\n[ERROR] ".$e->getMessage());
             $log->markFailed();
 
-            DesktopNotification::title('Sync failed: '.$e->getMessage())
+            DesktopNotification::title('Sync failed')
+                ->message($e->getMessage())
                 ->show();
 
             throw $e;
