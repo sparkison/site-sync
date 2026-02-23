@@ -83,7 +83,7 @@
 
                 {{-- Site link --}}
                 <a x-bind:href="siteUrl ?? '#'" x-show="siteName"
-                    class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                    class="justify-end text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
                     <span x-text="siteName"></span>
                     <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="w-3 h-3" />
                 </a>
