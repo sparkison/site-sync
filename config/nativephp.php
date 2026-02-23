@@ -164,8 +164,6 @@ return [
      */
     'prebuild' => [
         'npm run build',
-        'php artisan optimize',
-        'php artisan filament:optimize',
     ],
 
     'postbuild' => [

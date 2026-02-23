@@ -32,7 +32,7 @@ class CustomDashboard extends Dashboard
                 ->schema([
                     Forms\Components\Select::make('site_id')
                         ->label('Site')
-                        ->options(Site::all(['id', 'name'])->pluck('name', 'id'))
+                        ->options(fn () => Site::all(['id', 'name'])->pluck('name', 'id'))
                         ->afterStateUpdated(function (callable $set) {
                             $set('from_environment_id', null);
                             $set('to_environment_id', null);
