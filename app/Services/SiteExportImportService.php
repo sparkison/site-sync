@@ -22,6 +22,8 @@ class SiteExportImportService
         'ssh_key_id',
     ];
 
+    public function __construct(private SiteDiscoveryService $discovery) {}
+
     /**
      * Serialize a Site and its environments to an exportable array.
      *
@@ -80,6 +82,34 @@ class SiteExportImportService
             $site->environments()->create(Arr::except(
                 $envData,
                 ['id', 'site_id', 'created_at', 'updated_at', ...$this->sensitiveFields],
+            ));
+        }
+
+        return $site;
+    }
+
+    /**
+     * Import a site from raw movefile YAML content.
+     *
+     * @throws RuntimeException
+     */
+    public function importFromMovefile(string $yamlContent, string $siteName, string $sqlAdapter): Site
+    {
+        $environments = $this->discovery->parseMovefileContent($yamlContent);
+
+        if (empty($environments)) {
+            throw new RuntimeException('No environments found in the movefile.');
+        }
+
+        $site = Site::create([
+            'name' => $this->uniqueName($siteName),
+            'sql_adapter' => $sqlAdapter,
+        ]);
+
+        foreach ($environments as $envData) {
+            $site->environments()->create(Arr::except(
+                $envData,
+                ['id', 'site_id', 'created_at', 'updated_at'],
             ));
         }
 

@@ -5,6 +5,7 @@
 /** Custom components */
 @import './widgets.css';
 @import './footer.css';
+@import './global.css';
 
 /** Source files */
 @source '../../../../app/Filament/**/*';

@@ -105,7 +105,15 @@ class SiteDiscoveryService
      */
     public function parseMovefileYml(string $filePath): array
     {
-        $content = file_get_contents($filePath);
+        return $this->parseMovefileContent(file_get_contents($filePath));
+    }
+
+    /**
+     * Parse raw movefile YAML content and return environments as an array.
+     * Each key becomes an environment entry.
+     */
+    public function parseMovefileContent(string $content): array
+    {
         $parsed = Yaml::parse($content);
 
         $environments = [];

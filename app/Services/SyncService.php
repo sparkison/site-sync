@@ -416,6 +416,37 @@ class SyncService
         $this->runProcess($cmd);
     }
 
+    /**
+     * Test SSH connectivity to a remote environment.
+     *
+     * @return array{success: bool, output: string}
+     */
+    public function testConnection(Environment $env): array
+    {
+        $options = $this->buildSshOptions($env);
+        $command = ['ssh', ...$this->splitSshOptions($options), "{$env->ssh_user}@{$env->ssh_host}", 'echo SITESYNC_OK'];
+
+        $process = new Process($command, timeout: 15);
+        $process->run();
+
+        $output = trim($process->getOutput().$process->getErrorOutput());
+
+        return [
+            'success' => $process->isSuccessful() && str_contains($process->getOutput(), 'SITESYNC_OK'),
+            'output' => $output ?: 'No output received.',
+        ];
+    }
+
+    /**
+     * Split an SSH options string into an array of individual arguments.
+     *
+     * @return string[]
+     */
+    private function splitSshOptions(string $options): array
+    {
+        return array_values(array_filter(explode(' ', $options)));
+    }
+
     private function buildSshCommand(Environment $env): string
     {
         $options = $this->buildSshOptions($env);

@@ -26,6 +26,63 @@ class ListSites extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('import_movefile')
+                ->label('Import Movefile')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('gray')
+                ->modalWidth('md')
+                ->modalHeading('Import Movefile')
+                ->modalDescription('Upload a movefile.yml to create a site and its environments automatically.')
+                ->schema([
+                    Forms\Components\FileUpload::make('movefile')
+                        ->label('Movefile (.yml / .yaml)')
+                        ->acceptedFileTypes(['application/x-yaml', 'text/yaml', 'text/plain'])
+                        ->disk('local')
+                        ->directory('site-imports')
+                        ->required(),
+
+                    Forms\Components\TextInput::make('site_name')
+                        ->label('Site Name')
+                        ->placeholder('My Client Site')
+                        ->required()
+                        ->maxLength(255),
+
+                    Forms\Components\Select::make('sql_adapter')
+                        ->label('SQL Adapter')
+                        ->options([
+                            'wpcli' => 'WP-CLI (recommended)',
+                            'mysqldump' => 'mysqldump / mysql',
+                        ])
+                        ->native(false)
+                        ->default('wpcli')
+                        ->required(),
+                ])
+                ->action(function (array $data, SiteExportImportService $service): void {
+                    try {
+                        $content = Storage::disk('local')->get($data['movefile']);
+                        Storage::disk('local')->delete($data['movefile']);
+
+                        if (! $content) {
+                            throw new \RuntimeException('Could not read the uploaded file.');
+                        }
+
+                        $site = $service->importFromMovefile($content, $data['site_name'], $data['sql_adapter']);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Movefile imported')
+                            ->body("\"{$site->name}\" was created with ".($site->environments()->count()).' environment(s). Add any passwords or SSH keys manually.')
+                            ->persistent()
+                            ->send();
+                    } catch (Throwable $e) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Import failed')
+                            ->body($e->getMessage())
+                            ->send();
+                    }
+                }),
+
             Actions\Action::make('import')
                 ->label('Import Site')
                 ->icon('heroicon-o-arrow-down-tray')

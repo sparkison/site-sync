@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\SiteResource\RelationManagers;
 
+use App\Models\Environment;
 use App\Models\SshKey;
 use App\Services\SiteDiscoveryService;
+use App\Services\SyncService;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -246,6 +248,30 @@ class EnvironmentsRelationManager extends RelationManager
                     ->label('Add Environment'),
             ])
             ->recordActions(actions: [
+                Action::make('testConnection')
+                    ->label('Test Connection')
+                    ->tooltip('Test SSH connectivity to this environment')
+                    ->icon('heroicon-o-signal')
+                    ->color('gray')
+                    ->button()->hiddenLabel()
+                    ->hidden(fn (Environment $record): bool => $record->is_local)
+                    ->action(function (Environment $record): void {
+                        $result = app(SyncService::class)->testConnection($record);
+
+                        if ($result['success']) {
+                            Notification::make()
+                                ->success()
+                                ->title('Connection successful')
+                                ->body($result['output'])
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->danger()
+                                ->title('Connection failed')
+                                ->body($result['output'])
+                                ->send();
+                        }
+                    }),
                 DeleteAction::make()->button()->hiddenLabel(),
                 EditAction::make()->button()->hiddenLabel(),
             ], position: RecordActionsPosition::BeforeCells)
