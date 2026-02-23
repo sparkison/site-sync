@@ -14,10 +14,10 @@
 
             <div class="flex-1">
                 <h2 class="grid flex-1 text-base font-semibold leading-6 text-gray-950 dark:text-white">
-                    Sites
+                    Sites & Environments
                 </h2>
                 <p class="text-gray-600 dark:text-gray-300">
-                    Manage your sites and environments. Keep your data in sync across all your environments
+                    Keep your data in sync across all your environments
                     with ease.
                 </p>
             </div>
