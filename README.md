@@ -1,6 +1,6 @@
 # SiteSync
 
-A web-based WordPress site migration and synchronisation tool — a modern replacement for the `wordmove` CLI.
+A desktop WordPress site migration and synchronisation tool — a modern replacement for the `wordmove` CLI.
 
 ![SiteSync Dashboard](./resources/assets/sitesync-dashboard.png)
 
