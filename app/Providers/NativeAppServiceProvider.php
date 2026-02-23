@@ -16,7 +16,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         Window::open()
             ->title('SiteSync')
             ->width(1200)
-            ->height(800)
+            ->height(900)
             ->minWidth(1024)
             ->minHeight(750)
             ->titleBarHiddenInset();

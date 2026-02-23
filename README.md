@@ -1,3 +1,5 @@
 # Site Sync 🔄
 
-Something awesome coming soon...
+short description here...
+
+![screenshot](./resources/assets/sitesync-dashboard.png)
