@@ -43,3 +43,49 @@
 .dark ::-webkit-scrollbar-thumb:hover {
     background-color: #71829b;
 }
+
+/**
+ * NativePHP: titleBarHiddenInset layout
+ *
+ * Make the Filament topbar act as a native window drag handle.
+ * The macOS traffic-light buttons (close / minimise / maximise) sit at ~x:12
+ * with hiddenInset style and span roughly 70 px, so we push content right.
+ */
+.fi-topbar {
+    -webkit-app-region: drag;
+    padding-left: 80px;
+}
+
+/* Every interactive child must opt back out so clicks still work */
+.fi-topbar a,
+.fi-topbar button,
+.fi-topbar input,
+.fi-topbar label,
+.fi-topbar select,
+.fi-topbar textarea,
+.fi-topbar [role="button"],
+.fi-topbar [role="combobox"],
+.fi-topbar [data-headlessui-state],
+.fi-topbar [wire\:click] {
+    -webkit-app-region: no-drag;
+}
+
+
+/**
+ * NativePHP: titleBarHiddenInset layout
+ *  Make the topbar a native window drag handle for NativePHP, while ensuring interactive elements still work.
+*/
+
+.fi-topbar::after {
+    content: '';
+    position: absolute;
+    left: 0.3rem;
+    top: 0;
+    width: 68px;
+    height: 65px;
+    z-index: 10;
+    background-color: var(--color-polarnight-900);
+    border: 1px solid var(--color-polarnight-700);
+    border-radius: 0.6rem;
+    top: -2rem;
+}

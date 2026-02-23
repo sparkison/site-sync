@@ -10,29 +10,3 @@
 /** Source files */
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
-
-/**
- * NativePHP: titleBarHiddenInset layout
- *
- * Make the Filament topbar act as a native window drag handle.
- * The macOS traffic-light buttons (close / minimise / maximise) sit at ~x:12
- * with hiddenInset style and span roughly 70 px, so we push content right.
- */
-.fi-topbar {
-    -webkit-app-region: drag;
-    padding-left: 80px;
-}
-
-/* Every interactive child must opt back out so clicks still work */
-.fi-topbar a,
-.fi-topbar button,
-.fi-topbar input,
-.fi-topbar label,
-.fi-topbar select,
-.fi-topbar textarea,
-.fi-topbar [role="button"],
-.fi-topbar [role="combobox"],
-.fi-topbar [data-headlessui-state],
-.fi-topbar [wire\:click] {
-    -webkit-app-region: no-drag;
-}

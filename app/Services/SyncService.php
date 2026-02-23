@@ -11,6 +11,7 @@ class SyncService
     private ?SyncLog $log = null;
 
     private array $defaultExcludes = [
+        '.DS_Store',
         '.git/',
         '.gitignore',
         '.gitmodules',
