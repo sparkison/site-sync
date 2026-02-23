@@ -1,0 +1,45 @@
+/* ===========================
+   Scrollbar styling
+   App-like thin scrollbars for NativePHP (Chromium WebKit)
+   =========================== */
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #a7b1c5 transparent;
+}
+
+.dark * {
+    scrollbar-color: #4c566a transparent;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #a7b1c5;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #71829b;
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background-color: #4c566a;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background-color: #71829b;
+}
