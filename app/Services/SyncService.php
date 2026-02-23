@@ -222,7 +222,7 @@ class SyncService
 
         if ($env->is_local) {
             $process = new Process(
-                ['wp', 'option', 'get', 'siteurl', '--path='.$env->wordpress_path, '--allow-root'],
+                ['wp', 'option', 'get', 'siteurl', '--path='.$env->wordpress_path, '--skip-plugins', '--skip-themes', '--allow-root'],
                 timeout: 30
             );
             $process->run();
@@ -231,7 +231,7 @@ class SyncService
         }
 
         $sshCmd = $this->buildSshCommand($env);
-        $wpCmd = 'wp option get siteurl --path='.escapeshellarg($env->wordpress_path).' --allow-root';
+        $wpCmd = 'wp option get siteurl --path='.escapeshellarg($env->wordpress_path).' --skip-plugins --skip-themes --allow-root';
         $process = new Process(['bash', '-c', "{$sshCmd} ".escapeshellarg($wpCmd)], timeout: 30);
         $process->run();
 
@@ -245,6 +245,8 @@ class SyncService
                 'wp', 'search-replace', $old, $new,
                 '--path='.$env->wordpress_path,
                 '--skip-columns=guid',
+                '--skip-plugins',
+                '--skip-themes',
                 '--all-tables',
                 '--precise',
                 '--allow-root',
@@ -255,7 +257,7 @@ class SyncService
 
         $sshCmd = $this->buildSshCommand($env);
         $wpCmd = sprintf(
-            'wp search-replace %s %s %s --skip-columns=guid --all-tables --precise --allow-root',
+            'wp search-replace %s %s %s --skip-columns=guid --skip-plugins --skip-themes --all-tables --precise --allow-root',
             escapeshellarg($old),
             escapeshellarg($new),
             escapeshellarg('--path='.$env->wordpress_path),
