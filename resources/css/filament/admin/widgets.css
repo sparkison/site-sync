@@ -1,0 +1,7 @@
+.fi-sc-component .fi-wi-stats-overview-stat,
+.fi-wi-widget section {
+    @apply h-full;
+}
+.fi-wi-widget .fi-section-content .flex {
+    @apply flex-1;
+}

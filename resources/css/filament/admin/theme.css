@@ -1,7 +1,12 @@
+/** Theme imports */
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
 @import './nord-theme.css';
+
+/** Custom components */
+@import './widgets.css';
 @import './footer.css';
 
+/** Source files */
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 
