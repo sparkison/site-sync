@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Environment;
 use App\Models\SyncLog;
 use App\Services\SyncService;
+use App\Services\ToolHealthService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -28,6 +29,18 @@ class SyncJob implements ShouldQueue
     public function handle(SyncService $syncService): void
     {
         $log = $this->syncLog;
+
+        $missing = app(ToolHealthService::class)->missingForSync($log);
+        if (! empty($missing)) {
+            $log->appendOutput('[ERROR] Missing required tools: '.implode(', ', $missing)."\n");
+            $log->markFailed();
+            DesktopNotification::title('Sync cancelled')
+                ->message('Missing tools: '.implode(', ', $missing))
+                ->show();
+
+            return;
+        }
+
         $log->markRunning();
 
         try {
