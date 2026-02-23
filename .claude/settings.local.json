@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "mcp__laravel-boost__search-docs"
+      "mcp__laravel-boost__search-docs",
+      "Bash(vendor/bin/pint:*)"
     ]
   }
 }

@@ -88,33 +88,84 @@ class SyncService
 
     private function syncDatabase(Environment $from, Environment $to, string $direction): void
     {
-        $fromEnv = $from;
-        $toEnv = $to;
-
         $sqlAdapter = $from->site->sql_adapter;
 
-        // Build dump command (runs on $from environment)
-        $dumpCmd = $this->buildDumpCommand($fromEnv, $sqlAdapter);
-        // Build import command (runs on $to environment)
-        $importCmd = $this->buildImportCommand($toEnv, $sqlAdapter);
+        // Capture destination's current siteurl before overwriting — used for search-replace after import
+        $destinationUrl = $this->getWordPressSiteUrl($to);
 
-        if ($fromEnv->is_local && $toEnv->is_local) {
-            // Both local: pipe locally
-            $this->runProcess(array_merge(['bash', '-c', "{$dumpCmd} | {$importCmd}"]));
-        } elseif ($fromEnv->is_local && ! $toEnv->is_local) {
-            // Dump locally, import remotely via SSH
-            $sshCmd = $this->buildSshCommand($toEnv);
-            $cmd = "{$dumpCmd} | {$sshCmd} '{$importCmd}'";
-            $this->runProcess(['bash', '-c', $cmd]);
-        } elseif (! $fromEnv->is_local && $toEnv->is_local) {
-            // Dump remotely via SSH, import locally
-            $sshCmd = $this->buildSshCommand($fromEnv);
-            $cmd = "{$sshCmd} '{$dumpCmd}' | {$importCmd}";
-            $this->runProcess(['bash', '-c', $cmd]);
+        $dumpCmd = $this->buildDumpCommand($from, $sqlAdapter);
+        $importCmd = $this->buildImportCommand($to, $sqlAdapter);
+
+        if ($from->is_local && $to->is_local) {
+            $this->runProcess(['bash', '-c', "{$dumpCmd} | {$importCmd}"]);
+        } elseif ($from->is_local && ! $to->is_local) {
+            $sshCmd = $this->buildSshCommand($to);
+            $this->runProcess(['bash', '-c', "{$dumpCmd} | {$sshCmd} '{$importCmd}'"]);
+        } elseif (! $from->is_local && $to->is_local) {
+            $sshCmd = $this->buildSshCommand($from);
+            $this->runProcess(['bash', '-c', "{$sshCmd} '{$dumpCmd}' | {$importCmd}"]);
         } else {
-            // Remote to remote: not supported directly, use local as intermediary
             throw new \RuntimeException('Remote-to-remote database sync is not supported. Use a local environment as intermediary.');
         }
+
+        // After import the destination DB now contains the source's URLs — swap them back
+        if ($destinationUrl && $sqlAdapter === 'wpcli') {
+            $importedUrl = $this->getWordPressSiteUrl($to);
+
+            if ($importedUrl && $importedUrl !== $destinationUrl) {
+                $this->output("\n=== Running wp search-replace ===\n");
+                $this->output("  {$importedUrl} → {$destinationUrl}\n\n");
+                $this->runSearchReplace($to, $importedUrl, $destinationUrl);
+            }
+        }
+    }
+
+    private function getWordPressSiteUrl(Environment $env): ?string
+    {
+        if ($env->site->sql_adapter !== 'wpcli') {
+            return null;
+        }
+
+        if ($env->is_local) {
+            $process = new Process(
+                ['wp', 'option', 'get', 'siteurl', '--path='.$env->wordpress_path, '--allow-root'],
+                timeout: 30
+            );
+            $process->run();
+
+            return $process->isSuccessful() ? trim($process->getOutput()) : null;
+        }
+
+        $sshCmd = $this->buildSshCommand($env);
+        $wpCmd = 'wp option get siteurl --path='.escapeshellarg($env->wordpress_path).' --allow-root';
+        $process = new Process(['bash', '-c', "{$sshCmd} ".escapeshellarg($wpCmd)], timeout: 30);
+        $process->run();
+
+        return $process->isSuccessful() ? trim($process->getOutput()) : null;
+    }
+
+    private function runSearchReplace(Environment $env, string $oldUrl, string $newUrl): void
+    {
+        if ($env->is_local) {
+            $this->runProcess([
+                'wp', 'search-replace', $oldUrl, $newUrl,
+                '--path='.$env->wordpress_path,
+                '--all-tables',
+                '--precise',
+                '--allow-root',
+            ]);
+
+            return;
+        }
+
+        $sshCmd = $this->buildSshCommand($env);
+        $wpCmd = sprintf(
+            'wp search-replace %s %s %s --all-tables --precise --allow-root',
+            escapeshellarg($oldUrl),
+            escapeshellarg($newUrl),
+            escapeshellarg('--path='.$env->wordpress_path),
+        );
+        $this->runProcess(['bash', '-c', "{$sshCmd} ".escapeshellarg($wpCmd)]);
     }
 
     private function buildDumpCommand(Environment $env, string $adapter): string
