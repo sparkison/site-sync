@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "mcp__laravel-boost__search-docs",
-      "Bash(vendor/bin/pint:*)"
+      "Bash(vendor/bin/pint:*)",
+      "Bash(php artisan migrate:rollback:*)"
     ]
   }
 }

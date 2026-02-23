@@ -89,6 +89,7 @@ class EnvironmentsRelationManager extends RelationManager
                                         }
                                     })->hidden(fn (Get $get): bool => (bool) ! $get('is_local'))
                             ),
+
                     ])
                     ->columns(2),
 

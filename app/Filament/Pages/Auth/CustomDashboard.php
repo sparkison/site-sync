@@ -26,7 +26,7 @@ class CustomDashboard extends Dashboard
         return [
             Action::make('sync_site')
                 ->label('Sync Site')
-                ->tooltip('Sync data between two environments of this site. Watch the terminal on the dashboard for progress and output.')
+                ->tooltip('Sync data between two environments of the selected site. Watch the terminal on the dashboard for progress and output.')
                 ->icon('heroicon-o-arrow-path')
                 ->color('primary')
                 ->schema([

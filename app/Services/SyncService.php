@@ -89,9 +89,31 @@ class SyncService
     private function syncDatabase(Environment $from, Environment $to, string $direction): void
     {
         $sqlAdapter = $from->site->sql_adapter;
+        $timestamp = time();
+        $backupBasename = strtolower(preg_replace('/[^a-z0-9]+/', '-', $to->name)).'-backup-'.$timestamp;
 
-        // Capture destination's current siteurl before overwriting — used for search-replace after import
-        $destinationUrl = $this->getWordPressSiteUrl($to);
+        // 1. Backup destination before overwriting
+        $this->backupDatabase($to, $sqlAdapter, $backupBasename);
+
+        // 2. Determine the destination's intended URL for search-replace
+        $destinationUrl = null;
+
+        if ($sqlAdapter === 'wpcli') {
+            if ($to->vhost) {
+                $destinationUrl = rtrim($to->vhost, '/');
+                $this->output("  Destination URL (from vhost): {$destinationUrl}\n\n");
+            } else {
+                $this->output("  Detecting {$to->name} site URL from database...\n");
+                $destinationUrl = $this->getWordPressSiteUrl($to);
+                $this->output($destinationUrl
+                    ? "  → {$destinationUrl}\n  ⚠ Tip: set the Site URL / Vhost on this environment for reliable search-replace.\n\n"
+                    : "  → Could not detect URL — search-replace will be skipped\n\n"
+                );
+            }
+        }
+
+        // 3. Dump source and import to destination
+        $this->output("  Dumping {$from->name} and importing into {$to->name}...\n\n");
 
         $dumpCmd = $this->buildDumpCommand($from, $sqlAdapter);
         $importCmd = $this->buildImportCommand($to, $sqlAdapter);
@@ -108,16 +130,87 @@ class SyncService
             throw new \RuntimeException('Remote-to-remote database sync is not supported. Use a local environment as intermediary.');
         }
 
-        // After import the destination DB now contains the source's URLs — swap them back
+        // 4. wp search-replace: swap imported source URL back to destination URL
         if ($destinationUrl && $sqlAdapter === 'wpcli') {
             $importedUrl = $this->getWordPressSiteUrl($to);
 
             if ($importedUrl && $importedUrl !== $destinationUrl) {
-                $this->output("\n=== Running wp search-replace ===\n");
+                $this->output("\n  Running wp search-replace (URL)\n");
                 $this->output("  {$importedUrl} → {$destinationUrl}\n\n");
                 $this->runSearchReplace($to, $importedUrl, $destinationUrl);
+            } elseif ($importedUrl) {
+                $this->output("\n  URLs match ({$destinationUrl}) — skipping URL search-replace\n");
+            } else {
+                $this->output("\n  ⚠ Could not detect imported URL — skipping URL search-replace\n");
             }
         }
+
+        // 5. wp search-replace: swap source wordpress_path to destination path (if they differ)
+        if ($sqlAdapter === 'wpcli' && $from->wordpress_path && $to->wordpress_path) {
+            $fromPath = rtrim($from->wordpress_path, '/');
+            $toPath = rtrim($to->wordpress_path, '/');
+
+            if ($fromPath !== $toPath) {
+                $this->output("\n  Running wp search-replace (Path)\n");
+                $this->output("  {$fromPath} → {$toPath}\n\n");
+                $this->runSearchReplace($to, $fromPath, $toPath);
+            }
+        }
+    }
+
+    private function backupDatabase(Environment $env, string $sqlAdapter, string $backupBasename): void
+    {
+        $backupFile = rtrim($env->wordpress_path, '/').'/wp-content/'.$backupBasename.'.sql';
+
+        $this->output("  Backing up {$env->name}...\n");
+        $this->output("  → wp-content/{$backupBasename}.sql.gz\n\n");
+
+        $backupCmd = $this->buildBackupCommand($env, $sqlAdapter, $backupFile);
+
+        try {
+            if ($env->is_local) {
+                $this->runProcess(['bash', '-c', $backupCmd]);
+            } else {
+                $sshCmd = $this->buildSshCommand($env);
+                $this->runProcess(['bash', '-c', "{$sshCmd} ".escapeshellarg($backupCmd)]);
+            }
+
+            $this->output("  ✓ Backup saved: wp-content/{$backupBasename}.sql.gz\n\n");
+        } catch (\Throwable $e) {
+            $this->output("  ⚠ Backup failed (continuing): {$e->getMessage()}\n\n");
+        }
+    }
+
+    private function buildBackupCommand(Environment $env, string $sqlAdapter, string $backupFile): string
+    {
+        if ($sqlAdapter === 'wpcli') {
+            $exportCmd = sprintf(
+                'wp db export %s --path=%s --allow-root',
+                escapeshellarg($backupFile),
+                escapeshellarg($env->wordpress_path)
+            );
+        } else {
+            $args = sprintf(
+                '-u %s -h %s -P %d',
+                escapeshellarg($env->db_user),
+                escapeshellarg($env->db_host),
+                $env->db_port
+            );
+
+            if ($env->db_password) {
+                $args .= sprintf(' -p%s', escapeshellarg($env->db_password));
+            }
+
+            $exportCmd = sprintf(
+                'mysqldump %s %s %s > %s',
+                $args,
+                $env->mysqldump_options ?? '',
+                escapeshellarg($env->db_name),
+                escapeshellarg($backupFile)
+            );
+        }
+
+        return $exportCmd.' && gzip -9 -f '.escapeshellarg($backupFile);
     }
 
     private function getWordPressSiteUrl(Environment $env): ?string
@@ -144,12 +237,13 @@ class SyncService
         return $process->isSuccessful() ? trim($process->getOutput()) : null;
     }
 
-    private function runSearchReplace(Environment $env, string $oldUrl, string $newUrl): void
+    private function runSearchReplace(Environment $env, string $old, string $new): void
     {
         if ($env->is_local) {
             $this->runProcess([
-                'wp', 'search-replace', $oldUrl, $newUrl,
+                'wp', 'search-replace', $old, $new,
                 '--path='.$env->wordpress_path,
+                '--skip-columns=guid',
                 '--all-tables',
                 '--precise',
                 '--allow-root',
@@ -160,9 +254,9 @@ class SyncService
 
         $sshCmd = $this->buildSshCommand($env);
         $wpCmd = sprintf(
-            'wp search-replace %s %s %s --all-tables --precise --allow-root',
-            escapeshellarg($oldUrl),
-            escapeshellarg($newUrl),
+            'wp search-replace %s %s %s --skip-columns=guid --all-tables --precise --allow-root',
+            escapeshellarg($old),
+            escapeshellarg($new),
             escapeshellarg('--path='.$env->wordpress_path),
         );
         $this->runProcess(['bash', '-c', "{$sshCmd} ".escapeshellarg($wpCmd)]);
