@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Native\Desktop\Facades\Notification as DesktopNotification;
 use Throwable;
 
 class SyncJob implements ShouldQueue
@@ -39,9 +40,17 @@ class SyncJob implements ShouldQueue
                 ->{$log->direction}($from, $to, $scope);
 
             $log->markCompleted();
+
+            DesktopNotification::title('Sync completed successfully.')
+                ->show();
+
         } catch (Throwable $e) {
             $log->appendOutput("\n\n[ERROR] ".$e->getMessage());
             $log->markFailed();
+
+            DesktopNotification::title('Sync failed: '.$e->getMessage())
+                ->show();
+
             throw $e;
         }
     }

@@ -8,10 +8,10 @@ use App\Models\Site;
 use App\Models\SyncLog;
 use Filament\Actions\Action;
 use Filament\Forms;
-use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard;
 use Filament\Schemas;
 use Filament\Schemas\Components\Utilities\Get;
+use Native\Desktop\Facades\Notification as DesktopNotification;
 
 class CustomDashboard extends Dashboard
 {
@@ -91,10 +91,8 @@ class CustomDashboard extends Dashboard
                         $to = $record->environments()->find($data['to_environment_id']);
 
                         if (! $from || ! $to) {
-                            Notification::make()
-                                ->danger()
-                                ->title('Invalid environments selected.')
-                                ->send();
+                            DesktopNotification::title('Invalid environments selected.')
+                                ->show();
 
                             return;
                         }
@@ -115,17 +113,13 @@ class CustomDashboard extends Dashboard
 
                         SyncJob::dispatch($syncLog);
 
-                        Notification::make()
-                            ->success()
-                            ->title('Sync queued')
-                            ->body("Syncing {$from->name} → {$to->name}. Check sync history for progress.")
-                            ->send();
+                        DesktopNotification::title('Sync queued')
+                            ->message("Syncing {$from->name} → {$to->name}. Check sync history for progress.")
+                            ->show();
                     } catch (\Throwable $e) {
-                        Notification::make()
-                            ->danger()
-                            ->title('Failed to start sync')
-                            ->body($e->getMessage())
-                            ->send();
+                        DesktopNotification::title('Failed to start sync')
+                            ->message($e->getMessage())
+                            ->show();
                     }
                 })
                 ->modalIcon('heroicon-o-arrow-path')

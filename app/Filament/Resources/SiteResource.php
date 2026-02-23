@@ -13,7 +13,6 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas;
 use Filament\Schemas\Components\Section;
@@ -21,6 +20,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
+use Native\Desktop\Facades\Notification as DesktopNotification;
 
 class SiteResource extends Resource
 {
@@ -171,10 +171,8 @@ class SiteResource extends Resource
                         $to = $record->environments()->find($data['to_environment_id']);
 
                         if (! $from || ! $to) {
-                            Notification::make()
-                                ->danger()
-                                ->title('Invalid environments selected.')
-                                ->send();
+                            DesktopNotification::title('Invalid environments selected.')
+                                ->show();
 
                             return;
                         }
@@ -195,11 +193,9 @@ class SiteResource extends Resource
 
                         SyncJob::dispatch($syncLog);
 
-                        Notification::make()
-                            ->success()
-                            ->title('Sync queued')
-                            ->body("Syncing {$from->name} → {$to->name}. Check sync history for progress.")
-                            ->send();
+                        DesktopNotification::title('Sync queued')
+                            ->message("Syncing {$from->name} → {$to->name}. Check sync history for progress.")
+                            ->show();
                     })
                     ->modalIcon('heroicon-o-arrow-path')
                     ->modalWidth('lg')
