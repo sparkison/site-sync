@@ -91,7 +91,7 @@ class SyncService
     {
         $sqlAdapter = $from->site->sql_adapter;
         $timestamp = time();
-        $backupBasename = strtolower(preg_replace('/[^a-z0-9]+/', '-', $to->name)).'-backup-'.$timestamp;
+        $backupBasename = strtolower(preg_replace('/[^A-Za-z0-9]+/', '-', $to->name)).'-backup-'.$timestamp;
 
         // 1. Backup destination before overwriting
         $this->backupDatabase($to, $sqlAdapter, $backupBasename);
