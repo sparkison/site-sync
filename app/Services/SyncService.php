@@ -10,6 +10,8 @@ class SyncService
 {
     private ?SyncLog $log = null;
 
+    private ?Process $currentProcess = null;
+
     private array $defaultExcludes = [
         '.DS_Store',
         '.git/',
@@ -65,17 +67,20 @@ class SyncService
         $scope = array_unique($scope);
 
         if (in_array('db', $scope)) {
+            $this->throwIfCancelled();
             $this->output("=== Syncing Database ===\n");
             $this->syncDatabase($from, $to, $direction);
         }
 
         if (in_array('core', $scope)) {
+            $this->throwIfCancelled();
             $this->output("=== Syncing WordPress Core ===\n");
             $this->syncCore($from, $to, $direction);
         }
 
         foreach (['themes', 'plugins', 'mu-plugins', 'uploads'] as $wpContentDir) {
             if (in_array($wpContentDir, $scope)) {
+                $this->throwIfCancelled();
                 $this->output("=== Syncing wp-content/{$wpContentDir}/ ===\n");
                 $this->syncWpContentDirectory($from, $to, $wpContentDir);
             }
@@ -528,22 +533,58 @@ class SyncService
     private function runProcess(array $command): void
     {
         $process = new Process($command, timeout: 3600);
+        $this->currentProcess = $process;
 
-        $process->run(function (string $type, string $buffer): void {
-            $this->output($buffer);
-        });
+        try {
+            $process->start(function (string $type, string $buffer): void {
+                $this->output($buffer);
+            });
 
-        if (! $process->isSuccessful()) {
-            throw new \RuntimeException(
-                "Command failed (exit code {$process->getExitCode()}): ".$process->getErrorOutput()
-            );
+            while ($process->isRunning()) {
+                $process->checkTimeout();
+
+                if ($this->log && $this->log->fresh()->isCancelled()) {
+                    $process->stop(3);
+                    throw new \RuntimeException('Sync cancelled by user.');
+                }
+
+                usleep(500_000);
+            }
+
+            if (! $process->isSuccessful()) {
+                throw new \RuntimeException(
+                    "Command failed (exit code {$process->getExitCode()}): ".$process->getErrorOutput()
+                );
+            }
+        } finally {
+            $this->currentProcess = null;
+        }
+    }
+
+    private function throwIfCancelled(): void
+    {
+        if ($this->log && $this->log->fresh()->isCancelled()) {
+            throw new \RuntimeException('Sync cancelled by user.');
         }
     }
 
     private function output(string $text): void
     {
+        $text = $this->filterOutput($text);
+
+        if ($text === '') {
+            return;
+        }
+
         echo $text;
 
         $this->log?->appendOutput($text);
+    }
+
+    private function filterOutput(string $text): string
+    {
+        // Strip verbose WP-CLI "Skipping an inconvertible serialized object" warnings —
+        // these are harmless but produce enormous lines that freeze the terminal.
+        return preg_replace('/Warning: Skipping an inconvertible serialized object:[^\n]*/m', '', $text) ?? $text;
     }
 }

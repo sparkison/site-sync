@@ -66,6 +66,16 @@ class SyncLog extends Model
         $this->update(['status' => 'failed', 'completed_at' => now()]);
     }
 
+    public function markCancelled(): void
+    {
+        $this->update(['status' => 'cancelled', 'completed_at' => now()]);
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
+    }
+
     public function getScopeLabel(): string
     {
         return collect($this->scope)->implode(', ');

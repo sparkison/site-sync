@@ -34,4 +34,11 @@ class LiveTerminalWidget extends Widget
 
         return SiteResource::getUrl('edit', ['record' => $log->site]);
     }
+
+    public function cancel(): void
+    {
+        $log = SyncLog::whereIn('status', ['pending', 'running'])->latest()->first();
+
+        $log?->markCancelled();
+    }
 }

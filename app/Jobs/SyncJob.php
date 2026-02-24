@@ -41,6 +41,10 @@ class SyncJob implements ShouldQueue
             return;
         }
 
+        if ($log->fresh()->isCancelled()) {
+            return;
+        }
+
         $log->markRunning();
 
         try {
@@ -59,6 +63,14 @@ class SyncJob implements ShouldQueue
                 ->show();
 
         } catch (Throwable $e) {
+            $log->refresh();
+
+            if ($log->isCancelled()) {
+                $log->appendOutput("\n[Sync cancelled by user]");
+
+                return;
+            }
+
             $log->appendOutput("\n\n[ERROR] ".$e->getMessage());
             $log->markFailed();
 

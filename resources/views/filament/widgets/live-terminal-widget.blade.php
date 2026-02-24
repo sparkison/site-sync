@@ -64,6 +64,7 @@
                     <x-filament::badge color="warning" x-show="status === 'running'">Running</x-filament::badge>
                     <x-filament::badge color="success" x-show="status === 'completed'">Completed</x-filament::badge>
                     <x-filament::badge color="danger" x-show="status === 'failed'">Failed</x-filament::badge>
+                    <x-filament::badge color="gray" x-show="status === 'cancelled'">Cancelled</x-filament::badge>
 
                     {{-- Time / duration --}}
                     <span class="text-xs text-gray-400 dark:text-gray-500" x-show="startedAt">
@@ -81,12 +82,23 @@
                     No recent activity
                 </span>
 
-                {{-- Site link --}}
-                <a x-bind:href="siteUrl ?? '#'" x-show="siteName"
-                    class="justify-end text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
-                    <span x-text="siteName"></span>
-                    <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="w-3 h-3" />
-                </a>
+                {{-- Cancel button --}}
+                <div class="justify-end ">
+                    <div class="flex items-center gap-2">
+                        <x-filament::button outlined icon="heroicon-m-x-mark" wire:click="cancel"
+                            x-show="status === 'running' || status === 'pending'" color="danger" size="xs">
+                            Cancel
+                        </x-filament::button>
+
+                        {{-- Site link --}}
+                        <a x-bind:href="siteUrl ?? '#'" x-show="siteName"
+                            class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                            <span x-text="siteName"></span>
+                            <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="w-3 h-3" />
+                        </a>
+                    </div>
+
+                </div>
             </div>
 
             {{-- Terminal --}}
