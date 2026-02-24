@@ -10,6 +10,8 @@ class ListSshKeys extends ListRecords
 {
     protected static string $resource = SshKeyResource::class;
 
+    protected static ?string $title = 'SSH Keys';
+
     protected function getHeaderActions(): array
     {
         return [

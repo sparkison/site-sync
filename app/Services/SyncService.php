@@ -184,13 +184,20 @@ class SyncService
 
     private function buildBackupCommand(Environment $env, string $sqlAdapter, string $backupFile): string
     {
+        $gzip = $env->is_local ? $this->binary('gzip') : 'gzip';
+
         if ($sqlAdapter === 'wpcli') {
+            $wp = $env->is_local ? $this->binary('wp') : 'wp';
+
             $exportCmd = sprintf(
-                'wp db export %s --path=%s --allow-root',
+                '%s db export %s --path=%s --allow-root',
+                $wp,
                 escapeshellarg($backupFile),
                 escapeshellarg($env->wordpress_path)
             );
         } else {
+            $mysqldump = $env->is_local ? $this->binary('mysqldump') : 'mysqldump';
+
             $args = sprintf(
                 '-u %s -h %s -P %d',
                 escapeshellarg($env->db_user),
@@ -203,7 +210,8 @@ class SyncService
             }
 
             $exportCmd = sprintf(
-                'mysqldump %s %s %s > %s',
+                '%s %s %s %s > %s',
+                $mysqldump,
                 $args,
                 $env->mysqldump_options ?? '',
                 escapeshellarg($env->db_name),
@@ -211,7 +219,7 @@ class SyncService
             );
         }
 
-        return $exportCmd.' && gzip -9 -f '.escapeshellarg($backupFile);
+        return $exportCmd.' && '.$gzip.' -9 -f '.escapeshellarg($backupFile);
     }
 
     private function getWordPressSiteUrl(Environment $env): ?string
@@ -222,7 +230,7 @@ class SyncService
 
         if ($env->is_local) {
             $process = new Process(
-                ['wp', 'option', 'get', 'siteurl', '--path='.$env->wordpress_path, '--skip-plugins', '--skip-themes', '--allow-root'],
+                [$this->binary('wp'), 'option', 'get', 'siteurl', '--path='.$env->wordpress_path, '--skip-plugins', '--skip-themes', '--allow-root'],
                 timeout: 30
             );
             $process->run();
@@ -242,7 +250,7 @@ class SyncService
     {
         if ($env->is_local) {
             $this->runProcess([
-                'wp', 'search-replace', $old, $new,
+                $this->binary('wp'), 'search-replace', $old, $new,
                 '--path='.$env->wordpress_path,
                 '--skip-columns=guid',
                 '--skip-plugins',
@@ -268,13 +276,13 @@ class SyncService
     private function buildDumpCommand(Environment $env, string $adapter): string
     {
         if ($adapter === 'wpcli') {
-            return sprintf(
-                'wp db export - --path=%s --allow-root',
-                escapeshellarg($env->wordpress_path)
-            );
+            $wp = $env->is_local ? $this->binary('wp') : 'wp';
+
+            return sprintf('%s db export - --path=%s --allow-root', $wp, escapeshellarg($env->wordpress_path));
         }
 
-        // mysqldump fallback
+        $mysqldump = $env->is_local ? $this->binary('mysqldump') : 'mysqldump';
+
         $args = sprintf(
             '-u %s -h %s -P %d',
             escapeshellarg($env->db_user),
@@ -288,17 +296,18 @@ class SyncService
 
         $extra = $env->mysqldump_options ?? '';
 
-        return "mysqldump {$args} {$extra} ".escapeshellarg($env->db_name);
+        return "{$mysqldump} {$args} {$extra} ".escapeshellarg($env->db_name);
     }
 
     private function buildImportCommand(Environment $env, string $adapter): string
     {
         if ($adapter === 'wpcli') {
-            return sprintf(
-                'wp db import - --path=%s --allow-root',
-                escapeshellarg($env->wordpress_path)
-            );
+            $wp = $env->is_local ? $this->binary('wp') : 'wp';
+
+            return sprintf('%s db import - --path=%s --allow-root', $wp, escapeshellarg($env->wordpress_path));
         }
+
+        $mysql = $env->is_local ? $this->binary('mysql') : 'mysql';
 
         $args = sprintf(
             '-u %s -h %s -P %d',
@@ -311,7 +320,7 @@ class SyncService
             $args .= sprintf(' -p%s', escapeshellarg($env->db_password));
         }
 
-        return "mysql {$args} ".escapeshellarg($env->db_name);
+        return "{$mysql} {$args} ".escapeshellarg($env->db_name);
     }
 
     private function syncFiles(Environment $from, Environment $to, string $direction): void
@@ -396,7 +405,7 @@ class SyncService
         $excludes = $this->buildExcludes($from, $to);
         $rsyncOptions = $from->rsync_options ?? $to->rsync_options ?? '--verbose --itemize-changes --no-perms --no-owner --no-group';
 
-        $cmd = ['rsync', '-avz'];
+        $cmd = [$this->binary('rsync'), '-avz'];
 
         if ($rsyncOptions) {
             foreach (explode(' ', $rsyncOptions) as $opt) {
@@ -407,7 +416,7 @@ class SyncService
         }
 
         $cmd[] = '-e';
-        $cmd[] = "ssh {$sshOptions}";
+        $cmd[] = "{$this->binary('ssh')} {$sshOptions}";
 
         foreach ($excludes as $exclude) {
             $cmd[] = '--exclude='.$exclude;
@@ -427,7 +436,7 @@ class SyncService
     public function testConnection(Environment $env): array
     {
         $options = $this->buildSshOptions($env);
-        $command = ['ssh', ...$this->splitSshOptions($options), "{$env->ssh_user}@{$env->ssh_host}", 'echo SITESYNC_OK'];
+        $command = [$this->binary('ssh'), ...$this->splitSshOptions($options), "{$env->ssh_user}@{$env->ssh_host}", 'echo SITESYNC_OK'];
 
         $process = new Process($command, timeout: 15);
         $process->run();
@@ -454,7 +463,7 @@ class SyncService
     {
         $options = $this->buildSshOptions($env);
 
-        return "ssh {$options} {$env->ssh_user}@{$env->ssh_host}";
+        return "{$this->binary('ssh')} {$options} {$env->ssh_user}@{$env->ssh_host}";
     }
 
     private function buildSshOptions(Environment $env): string
@@ -498,7 +507,7 @@ class SyncService
 
     private function buildExcludes(Environment ...$envs): array
     {
-        $excludes = $this->defaultExcludes;
+        $excludes = app(AppSettings::class)->get('default_ignores', $this->defaultExcludes);
 
         foreach ($envs as $env) {
             if (! empty($env->exclude)) {
@@ -507,6 +516,13 @@ class SyncService
         }
 
         return array_unique($excludes);
+    }
+
+    private function binary(string $name): string
+    {
+        $paths = app(AppSettings::class)->get('custom_paths', []);
+
+        return ($paths[$name] ?? null) ?: $name;
     }
 
     private function runProcess(array $command): void

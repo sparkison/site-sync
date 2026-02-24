@@ -102,9 +102,18 @@ class ToolHealthService
     /**
      * @return array{installed: bool, path: string|null}
      */
-    private function probe(string $binary): array
+    private function probe(string $key): array
     {
-        $process = new Process(['which', $binary], timeout: 5);
+        $customPaths = app(AppSettings::class)->get('custom_paths', []);
+        $customPath = $customPaths[$key] ?? null;
+
+        if ($customPath) {
+            $installed = is_file($customPath) && is_executable($customPath);
+
+            return ['installed' => $installed, 'path' => $installed ? $customPath : null];
+        }
+
+        $process = new Process(['which', $key], timeout: 5);
         $process->run();
 
         if ($process->isSuccessful()) {

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Listeners\HandleSyncProcessExited;
 use App\Listeners\HandleSyncProcessOutput;
+use App\Services\AppSettings;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Native\Desktop\Events\ChildProcess\ErrorReceived;
@@ -17,7 +18,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(AppSettings::class);
     }
 
     /**
