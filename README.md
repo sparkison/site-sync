@@ -10,7 +10,7 @@ A desktop WordPress site migration and synchronisation tool — a modern replace
 
 SiteSync provides a Filament-powered admin UI for managing multiple WordPress sites and syncing their databases and files between environments (local ↔ staging ↔ production). It handles SSH connectivity, encrypted credential storage, real-time sync logging, and site discovery from existing WordPress installs.
 
-Built with Laravel 12, Filament 5, and NativePhp — runs as a web app or desktop app.
+Built with Laravel 12, Filament 5, and NativePHP — runs as a web app or desktop app.
 
 ---
 
@@ -27,7 +27,7 @@ Built with Laravel 12, Filament 5, and NativePhp — runs as a web app or deskto
 - **Sync history** — full log of every sync with command output, status, and duration
 - **Live terminal** — real-time sync output streamed to the dashboard
 - **CLI commands** — run push/pull syncs from the terminal without the UI
-- **Desktop app** — ships as a NativePhp desktop application
+- **Desktop app** — ships as a NativePHP desktop application
 
 ---
 
@@ -38,7 +38,7 @@ Built with Laravel 12, Filament 5, and NativePhp — runs as a web app or deskto
 | Framework | Laravel 12 |
 | Admin UI | Filament 5 |
 | Frontend | Livewire 4, Alpine.js, Tailwind CSS v4 |
-| Desktop | NativePhp 2 |
+| Desktop | NativePHP 2 |
 | Queue / Cache / Sessions | SQLite (database driver) |
 | Testing | Pest 4 |
 | Process execution | symfony/process |
@@ -85,7 +85,7 @@ npm run build
 # Start Laravel server, queue worker, log viewer, and Vite concurrently
 composer run dev
 
-# Or for the NativePhp desktop app
+# Or for the NativePHP desktop app
 composer run native:dev
 ```
 
