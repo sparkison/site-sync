@@ -392,7 +392,11 @@ class SyncService
 
         foreach ($corePatterns as $pattern) {
             $sourcePath = rtrim($from->wordpress_path, '/').'/'.$pattern;
-            $targetPath = rtrim($to->wordpress_path, '/').'/'.$pattern;
+            if ($pattern === 'wp-*.php') {
+                $targetPath = rtrim($to->wordpress_path, '/').'/';
+            } else {
+                $targetPath = rtrim($to->wordpress_path, '/').'/'.$pattern;
+            }
 
             if (! $from->is_local) {
                 $sourcePath = "{$from->ssh_user}@{$from->ssh_host}:{$sourcePath}";
