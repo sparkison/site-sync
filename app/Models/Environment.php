@@ -30,6 +30,7 @@ class Environment extends Model
         'ssh_key_id',
         'rsync_options',
         'exclude',
+        'sync_hooks',
     ];
 
     protected function casts(): array
@@ -41,6 +42,7 @@ class Environment extends Model
             'db_password' => 'encrypted',
             'ssh_password' => 'encrypted',
             'exclude' => 'array',
+            'sync_hooks' => 'array',
         ];
     }
 

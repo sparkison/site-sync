@@ -181,6 +181,50 @@ class EnvironmentsRelationManager extends RelationManager
                     ->columns(3)
                     ->hidden(fn (Get $get): bool => (bool) $get('is_local')),
 
+                Section::make('Sync hooks')
+                    ->columnSpanFull()
+                    ->schema([
+                        Forms\Components\Repeater::make('sync_hooks.before_push_source')
+                            ->label('Before push (source)')
+                            ->hint('Run these commands on the source environment just before pushing')
+                            ->schema([
+                                Forms\Components\Textarea::make('command')
+                                    ->rows(2)
+                                    ->required(),
+                            ])
+                            ->columns(1),
+
+                        Forms\Components\Repeater::make('sync_hooks.before_push_target')
+                            ->label('Before push (target)')
+                            ->hint('Run these commands on the target environment just before pushing')
+                            ->schema([
+                                Forms\Components\Textarea::make('command')
+                                    ->rows(2)
+                                    ->required(),
+                            ])
+                            ->columns(1),
+
+                        Forms\Components\Repeater::make('sync_hooks.after_pull_source')
+                            ->label('After pull (source)')
+                            ->hint('Run these commands on the source environment immediately after a pull')
+                            ->schema([
+                                Forms\Components\Textarea::make('command')
+                                    ->rows(2)
+                                    ->required(),
+                            ])
+                            ->columns(1),
+
+                        Forms\Components\Repeater::make('sync_hooks.after_pull_target')
+                            ->label('After pull (target)')
+                            ->hint('Run these commands on the target environment immediately after a pull')
+                            ->schema([
+                                Forms\Components\Textarea::make('command')
+                                    ->rows(2)
+                                    ->required(),
+                            ])
+                            ->columns(1),
+                    ]),
+
                 Section::make('Exclude Patterns')
                     ->columnSpanFull()
                     ->compact()
@@ -273,6 +317,27 @@ class EnvironmentsRelationManager extends RelationManager
                                 ->body($result['output'])
                                 ->send();
                         }
+                    }),
+
+                Action::make('runCommand')
+                    ->label('Run SSH command')
+                    ->icon('heroicon-o-terminal')
+                    ->button()
+                    ->modalWidth('lg')
+                    ->form([
+                        Forms\Components\Textarea::make('command')
+                            ->label('Bash command')
+                            ->rows(3)
+                            ->required(),
+                    ])
+                    ->action(function (Environment $record, array $data): void {
+                        $result = app(SyncService::class)->runCommand($record, $data['command']);
+
+                        Notification::make($result['success'] ? 'success' : 'danger')
+                            ->title($result['success'] ? 'Command executed' : 'Failed')
+                            ->body('<pre>'.e($result['output']).'</pre>')
+                            ->danger(! $result['success'])
+                            ->send();
                     }),
             ], position: RecordActionsPosition::BeforeCells)
             ->reorderable(false);

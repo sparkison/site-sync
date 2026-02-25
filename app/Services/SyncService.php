@@ -12,21 +12,6 @@ class SyncService
 
     private ?Process $currentProcess = null;
 
-    private array $defaultExcludes = [
-        '.DS_Store',
-        '.git/',
-        '.gitignore',
-        '.gitmodules',
-        '.env',
-        'node_modules/',
-        'movefile.yml',
-        'movefile.yaml',
-        'Movefile',
-        'wp-config.php',
-        'wp-content/*.sql.gz',
-        '*.orig',
-    ];
-
     public function withLog(SyncLog $log): static
     {
         $this->log = $log;
@@ -56,6 +41,15 @@ class SyncService
     {
         if (in_array('all', $scope)) {
             $scope = ['db', 'core', 'themes', 'plugins', 'mu-plugins', 'uploads'];
+        }
+
+        // run any configured hooks for this operation
+        if ($direction === 'push') {
+            $this->runHooks($from, 'before_push_source');
+            $this->runHooks($to, 'before_push_target');
+        } else {
+            $this->runHooks($from, 'before_pull_source');
+            $this->runHooks($to, 'before_pull_target');
         }
 
         // Expand legacy 'files' to granular wp-content directories
@@ -89,6 +83,15 @@ class SyncService
         foreach (array_diff($scope, self::KNOWN_SCOPES) as $customPath) {
             $this->output("=== Syncing custom path: {$customPath} ===\n");
             $this->syncCustomPath($from, $to, $customPath);
+        }
+
+        // hooks after the sync
+        if ($direction === 'push') {
+            $this->runHooks($from, 'after_push_source');
+            $this->runHooks($to, 'after_push_target');
+        } else {
+            $this->runHooks($from, 'after_pull_source');
+            $this->runHooks($to, 'after_pull_target');
         }
     }
 
@@ -389,7 +392,7 @@ class SyncService
 
         foreach ($corePatterns as $pattern) {
             $sourcePath = rtrim($from->wordpress_path, '/').'/'.$pattern;
-            $targetPath = rtrim($to->wordpress_path, '/').'/';
+            $targetPath = rtrim($to->wordpress_path, '/').'/'.$pattern;
 
             if (! $from->is_local) {
                 $sourcePath = "{$from->ssh_user}@{$from->ssh_host}:{$sourcePath}";
@@ -455,6 +458,54 @@ class SyncService
     }
 
     /**
+     * Execute arbitrary commands stored as hooks for an environment.
+     *
+     * @param  string  $hook  array key such as "before_push_source"
+     */
+    private function runHooks(Environment $env, string $hook): void
+    {
+        $entries = $env->sync_hooks[$hook] ?? [];
+
+        foreach ((array) $entries as $entry) {
+            $cmd = is_array($entry) ? ($entry['command'] ?? '') : (string) $entry;
+            if ($cmd === '') {
+                continue;
+            }
+
+            $this->output("→ running {$hook} on {$env->name}: {$cmd}\n");
+
+            if ($env->is_local) {
+                $this->runProcess(['bash', '-lc', $cmd]);
+            } else {
+                $ssh = $this->buildSshCommand($env);
+                $this->runProcess(['bash', '-c', "{$ssh} ".escapeshellarg($cmd)]);
+            }
+        }
+    }
+
+    /**
+     * Allows ad hoc execution of a command on the given environment.
+     *
+     * @return array{success: bool, output: string}
+     */
+    public function runCommand(Environment $env, string $command): array
+    {
+        if ($env->is_local) {
+            $process = new Process(['bash', '-lc', $command], timeout: 3600);
+        } else {
+            $ssh = $this->buildSshCommand($env);
+            $process = new Process(['bash', '-c', "{$ssh} ".escapeshellarg($command)], timeout: 3600);
+        }
+
+        $process->run();
+
+        return [
+            'success' => $process->isSuccessful(),
+            'output' => trim($process->getOutput().$process->getErrorOutput()),
+        ];
+    }
+
+    /**
      * Split an SSH options string into an array of individual arguments.
      *
      * @return string[]
@@ -512,7 +563,7 @@ class SyncService
 
     private function buildExcludes(Environment ...$envs): array
     {
-        $excludes = app(AppSettings::class)->get('default_ignores', $this->defaultExcludes);
+        $excludes = app(AppSettings::class)->get('default_ignores', []);
 
         foreach ($envs as $env) {
             if (! empty($env->exclude)) {

@@ -20,6 +20,7 @@ Built with Laravel 12, Filament 5, and NativePhp — runs as a web app or deskto
 - **Granular scope control** — sync database, themes, plugins, mu-plugins, uploads, WordPress core, or custom paths independently
 - **Database sync** — dump, import, and automatic URL/path search-replace (via WP-CLI or mysqldump)
 - **SSH key management** — store keys as file paths or inline content; encrypted at rest
+- **Custom commands & hooks** — execute one-off SSH commands or configure per-environment pre/post sync hooks (useful for WP-CLI tasks, find-replace, etc.)
 - **Automatic backups** — pre-sync SQL backups before any database is overwritten
 - **Site discovery** — auto-detect WordPress installs from a local path; parses `wp-config.php` and `movefile.yml`
 - **Movefile import** — import site configs directly from existing movefile YAML
