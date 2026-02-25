@@ -5,40 +5,84 @@
             /** @var \App\Models\SyncLog|null $syncLog */
             $syncLog = $this->syncLog;
             $siteUrl = $this->siteUrl;
+
+            // Show at most the last 50 KB on initial load; SSE streams new content on top.
+            $rawContent   = $syncLog?->getOutputContent() ?? '';
+            $rawSize      = strlen($rawContent);
+            $initialLimit = 50_000;
+
+            if ($rawSize > $initialLimit) {
+                $initialContent = "[Output truncated — showing last 50 KB]\n\n" . substr($rawContent, -$initialLimit);
+            } else {
+                $initialContent = $rawContent;
+            }
+
+            // Byte offset where SSE should start reading from the log file.
+            $initialOffset = $rawSize;
         @endphp
 
         <div x-data="{
-                status: @js($syncLog?->status),
+                logId:     @js($syncLog?->id),
+                offset:    @js($initialOffset),
+                status:    @js($syncLog?->status),
                 direction: @js($syncLog?->direction),
-                from: @js($syncLog?->fromEnvironment?->name),
-                to: @js($syncLog?->toEnvironment?->name),
-                siteName: @js($syncLog?->site?->name),
-                siteUrl: @js($siteUrl),
-                output: @js($syncLog?->output ?? ''),
+                from:      @js($syncLog?->fromEnvironment?->name),
+                to:        @js($syncLog?->toEnvironment?->name),
+                siteName:  @js($syncLog?->site?->name),
+                siteUrl:   @js($siteUrl),
+                output:    @js($initialContent),
                 startedAt: @js($syncLog?->started_at?->format('H:i:s')),
-                duration: @js($syncLog?->completed_at ? $syncLog->started_at->diffForHumans($syncLog->completed_at, true) : null),
+                duration:  @js($syncLog?->completed_at ? $syncLog->started_at->diffForHumans($syncLog->completed_at, true) : null),
+                es:        null,
 
                 init() {
                     this.$nextTick(() => this.scrollToBottom());
                     this.$watch('output', () => this.$nextTick(() => this.scrollToBottom()));
-                    setInterval(() => this.poll(), 1000);
+                    this.connect();
                 },
 
-                async poll() {
-                    try {
-                        const res = await fetch('{{ route('sync-logs.latest') }}');
-                        const data = await res.json();
-                        if (!data) return;
-                        this.status = data.status;
-                        this.direction = data.direction;
-                        this.from = data.from;
-                        this.to = data.to;
-                        this.siteName = data.site_name;
-                        this.siteUrl = data.site_url;
-                        this.output = data.output ?? '';
-                        this.startedAt = data.started_at;
-                        this.duration = data.duration;
-                    } catch {}
+                connect() {
+                    const url = '{{ route('sync-logs.stream') }}?log_id=' + (this.logId ?? 0) + '&offset=' + this.offset;
+                    this.es = new EventSource(url);
+
+                    this.es.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+
+                        if (data.type === 'init') {
+                            const isNew = data.id !== this.logId;
+                            this.logId    = data.id;
+                            this.status   = data.status;
+                            this.direction = data.direction;
+                            this.from     = data.from;
+                            this.to       = data.to;
+                            this.siteName = data.site_name;
+                            this.siteUrl  = data.site_url;
+                            this.startedAt = data.started_at;
+                            this.duration  = data.duration;
+
+                            if (isNew) {
+                                this.output = '';
+                                this.offset = 0;
+                            }
+
+                            return;
+                        }
+
+                        if (data.type === 'chunk' && data.id === this.logId) {
+                            this.output += data.content;
+                            this.offset += new TextEncoder().encode(data.content).length;
+                            return;
+                        }
+
+                        if (data.type === 'status' && data.id === this.logId) {
+                            this.status   = data.status;
+                            this.duration = data.duration;
+                        }
+                    };
+
+                    this.es.onerror = () => {
+                        // EventSource handles reconnection automatically using Last-Event-ID.
+                    };
                 },
 
                 scrollToBottom() {

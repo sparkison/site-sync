@@ -17,7 +17,6 @@ class SyncLog extends Model
         'direction',
         'scope',
         'status',
-        'output',
         'started_at',
         'completed_at',
     ];
@@ -29,6 +28,16 @@ class SyncLog extends Model
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::deleted(function (SyncLog $log): void {
+            $path = $log->logFilePath();
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        });
     }
 
     public function site(): BelongsTo
@@ -46,9 +55,53 @@ class SyncLog extends Model
         return $this->belongsTo(Environment::class, 'to_environment_id');
     }
 
+    public function logFilePath(): string
+    {
+        return storage_path("app/sync-logs/sync-{$this->id}.log");
+    }
+
     public function appendOutput(string $text): void
     {
-        $this->update(['output' => ($this->output ?? '').$text]);
+        $dir = storage_path('app/sync-logs');
+
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        file_put_contents($this->logFilePath(), $text, FILE_APPEND);
+    }
+
+    /**
+     * @return array{content: string, offset: int}
+     */
+    public function readOutputChunk(int $offset = 0): array
+    {
+        $path = $this->logFilePath();
+
+        if (! file_exists($path)) {
+            return ['content' => '', 'offset' => 0];
+        }
+
+        clearstatcache(true, $path);
+        $size = filesize($path);
+
+        if ($offset >= $size) {
+            return ['content' => '', 'offset' => $size];
+        }
+
+        $fp = fopen($path, 'rb');
+        fseek($fp, $offset);
+        $content = (string) fread($fp, $size - $offset);
+        fclose($fp);
+
+        return ['content' => $content, 'offset' => $size];
+    }
+
+    public function getOutputContent(): string
+    {
+        return file_exists($this->logFilePath())
+            ? (file_get_contents($this->logFilePath()) ?: '')
+            : '';
     }
 
     public function markRunning(): void

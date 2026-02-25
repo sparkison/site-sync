@@ -24,5 +24,5 @@
     <div
         class="bg-gray-950 rounded-lg p-4 font-mono text-xs text-green-400 overflow-auto max-h-[60vh] whitespace-pre-wrap break-all"
         @if($log->status === 'running') wire:poll.2s="$refresh" @endif
-    >{{ $log->output ?? '(no output yet)' }}</div>
+    >{{ $log->getOutputContent() ?: '(no output yet)' }}</div>
 </div>
