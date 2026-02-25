@@ -152,6 +152,31 @@ php artisan test --compact
 
 ---
 
-## License
+## 🤝 Want to Contribute?
 
-MIT
+> Whether it’s writing docs, squashing bugs, or building new features, your contribution matters! ❤️
+
+We welcome **PRs, issues, ideas, and suggestions**!\
+Here’s how you can join the party:
+
+- Follow our coding style and best practices.
+- Be respectful, helpful, and open-minded.
+- Respect the **CC BY-NC-SA license**.
+
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Submit a pull request
+
+---
+
+## ⚖️ License  
+
+> m3u editor is licensed under **CC BY-NC-SA 4.0**:  
+
+- **BY**: Give credit where credit’s due.  
+- **NC**: No commercial use.  
+- **SA**: Share alike if you remix.  
+
+For full license details, see [LICENSE](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
