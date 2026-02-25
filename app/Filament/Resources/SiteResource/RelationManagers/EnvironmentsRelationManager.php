@@ -183,6 +183,9 @@ class EnvironmentsRelationManager extends RelationManager
 
                 Section::make('Sync hooks')
                     ->columnSpanFull()
+                    ->compact()
+                    ->collapsed()
+                    ->icon('heroicon-o-arrow-uturn-up')
                     ->schema([
                         Forms\Components\Repeater::make('sync_hooks.before_push_source')
                             ->label('Before push (source)')
@@ -192,6 +195,7 @@ class EnvironmentsRelationManager extends RelationManager
                                     ->rows(2)
                                     ->required(),
                             ])
+                            ->defaultItems(0)
                             ->columns(1),
 
                         Forms\Components\Repeater::make('sync_hooks.before_push_target')
@@ -202,6 +206,7 @@ class EnvironmentsRelationManager extends RelationManager
                                     ->rows(2)
                                     ->required(),
                             ])
+                            ->defaultItems(0)
                             ->columns(1),
 
                         Forms\Components\Repeater::make('sync_hooks.after_pull_source')
@@ -212,6 +217,7 @@ class EnvironmentsRelationManager extends RelationManager
                                     ->rows(2)
                                     ->required(),
                             ])
+                            ->defaultItems(0)
                             ->columns(1),
 
                         Forms\Components\Repeater::make('sync_hooks.after_pull_target')
@@ -222,12 +228,15 @@ class EnvironmentsRelationManager extends RelationManager
                                     ->rows(2)
                                     ->required(),
                             ])
+                            ->defaultItems(0)
                             ->columns(1),
                     ]),
 
                 Section::make('Exclude Patterns')
                     ->columnSpanFull()
                     ->compact()
+                    ->collapsed()
+                    ->icon('heroicon-o-eye-slash')
                     ->schema([
                         Forms\Components\TagsInput::make('exclude')
                             ->label('Exclude from Sync')
@@ -321,10 +330,13 @@ class EnvironmentsRelationManager extends RelationManager
 
                 Action::make('runCommand')
                     ->label('Run SSH command')
-                    ->icon('heroicon-o-terminal')
+                    ->icon('heroicon-o-command-line')
                     ->button()
                     ->modalWidth('lg')
-                    ->form([
+                    ->tooltip(fn (Environment $record) => $record->is_local ? 'Local environment, no SSH needed' : 'Run a custom SSH command on this environment')
+
+                    ->disabled(fn (Environment $record): bool => $record->is_local)
+                    ->schema([
                         Forms\Components\Textarea::make('command')
                             ->label('Bash command')
                             ->rows(3)
@@ -336,7 +348,6 @@ class EnvironmentsRelationManager extends RelationManager
                         Notification::make($result['success'] ? 'success' : 'danger')
                             ->title($result['success'] ? 'Command executed' : 'Failed')
                             ->body('<pre>'.e($result['output']).'</pre>')
-                            ->danger(! $result['success'])
                             ->send();
                     }),
             ], position: RecordActionsPosition::BeforeCells)
