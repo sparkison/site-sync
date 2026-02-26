@@ -103,6 +103,7 @@ export default {
         schemes: [deepLinkProtocol],
     },
     mac: {
+        identity: null,
         entitlementsInherit: 'build/entitlements.mac.plist',
         artifactName: appName + '-${version}-${arch}.${ext}',
         extendInfo: {
