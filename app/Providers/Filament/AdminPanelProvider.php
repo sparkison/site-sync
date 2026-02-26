@@ -29,6 +29,11 @@ class AdminPanelProvider extends PanelProvider
             fn () => view('footer')
         );
 
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+            fn (): string => Blade::render("@livewire('site-sync-action')")
+        );
+
         Filament::registerRenderHook('panels::body.end', fn () => Blade::render("@vite('resources/js/app.js')"));
 
         return $panel

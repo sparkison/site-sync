@@ -19,7 +19,7 @@ class ListSites extends ListRecords
     protected function getHeaderWidgets(): array
     {
         return [
-            LiveTerminalWidget::class,
+            // LiveTerminalWidget::class,
         ];
     }
 
