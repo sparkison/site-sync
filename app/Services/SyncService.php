@@ -580,9 +580,6 @@ class SyncService
 
         register_shutdown_function(fn () => @unlink($tmpLocal));
 
-        $fromPrefix = rtrim($from->db_prefix ?? 'wp_', '_').'_';
-        $toPrefix = rtrim($to->db_prefix ?? 'wp_', '_').'_';
-
         try {
             // 1. Dump locally to a temp file
             $this->runProcess([
@@ -593,11 +590,6 @@ class SyncService
 
             if (! file_exists($tmpLocal) || filesize($tmpLocal) === 0) {
                 throw new \RuntimeException('Local database dump produced an empty file — aborting import.');
-            }
-
-            // Rewrite table prefix in the dump if source and destination prefixes differ
-            if ($fromPrefix !== $toPrefix) {
-                $this->rewriteTablePrefixInDump($tmpLocal, $fromPrefix, $toPrefix);
             }
 
             // 2. Stream to a remote temp file via SSH cat — no SCP/SFTP needed
@@ -620,11 +612,6 @@ class SyncService
                 escapeshellarg($to->wordpress_path),
             );
             $this->runProcess(['bash', '-c', $sshCmd.' '.escapeshellarg($remoteImportCmd)]);
-
-            // Fix any option_name / meta_key values that still carry the old prefix
-            if ($fromPrefix !== $toPrefix) {
-                $this->fixPrefixedMetaKeys($to, $fromPrefix, $toPrefix);
-            }
         } finally {
             // 4. Clean up remote temp file (best-effort)
             $sshCmd = $this->buildSshCommand($to);
@@ -649,9 +636,6 @@ class SyncService
 
         $sshCmd = $this->buildSshCommand($from);
 
-        $fromPrefix = rtrim($from->db_prefix ?? 'wp_', '_').'_';
-        $toPrefix = rtrim($to->db_prefix ?? 'wp_', '_').'_';
-
         try {
             // 1. Dump to a temp file on the remote
             $this->runProcess(['bash', '-c', $sshCmd.' '.escapeshellarg(sprintf(
@@ -669,80 +653,16 @@ class SyncService
                 throw new \RuntimeException('Remote database dump produced an empty file — aborting import.');
             }
 
-            // Rewrite table prefix if source and destination prefixes differ
-            if ($fromPrefix !== $toPrefix) {
-                $this->rewriteTablePrefixInDump($tmpLocal, $fromPrefix, $toPrefix);
-            }
-
             // 3. Import locally
             $this->runProcess([
                 $wp, 'db', 'import', $tmpLocal,
                 '--path='.$to->wordpress_path,
                 '--allow-root',
             ]);
-
-            // Fix any option_name / meta_key values that still carry the old prefix
-            if ($fromPrefix !== $toPrefix) {
-                $this->fixPrefixedMetaKeys($to, $fromPrefix, $toPrefix);
-            }
         } finally {
             // 4. Clean up remote temp file (best-effort)
             $cleanupProcess = new Process(['bash', '-c', $sshCmd.' '.escapeshellarg('rm -f '.escapeshellarg($tmpRemote))], timeout: 15);
             $cleanupProcess->run();
-        }
-    }
-
-    /**
-     * Rewrite table-name identifiers in an SQL dump file from one WP table prefix to another.
-     *
-     * Only backtick-quoted identifiers are replaced (e.g. `ghl_options` → `wp_options`),
-     * so regular string data in INSERT values is left untouched.
-     */
-    private function rewriteTablePrefixInDump(string $path, string $fromPrefix, string $toPrefix): void
-    {
-        $this->output("  ✎ Rewriting table prefix: {$fromPrefix} → {$toPrefix}\n");
-
-        $sql = file_get_contents($path);
-        $sql = str_replace('`'.$fromPrefix, '`'.$toPrefix, $sql);
-        file_put_contents($path, $sql);
-    }
-
-    /**
-     * After a DB import that involved a prefix rename, some WordPress data (option_name,
-     * meta_key) stores the table prefix as part of the key value itself
-     * (e.g. option_name="ghl_user_roles", meta_key="ghl_capabilities").
-     * Run targeted SQL UPDATEs via WP-CLI to rename those values too.
-     */
-    private function fixPrefixedMetaKeys(Environment $env, string $fromPrefix, string $toPrefix): void
-    {
-        $this->output("  ✎ Fixing stored option/meta keys: {$fromPrefix} → {$toPrefix}\n");
-
-        $optionsTable = $toPrefix.'options';
-        $usermetaTable = $toPrefix.'usermeta';
-
-        $sql = implode(' ', [
-            "UPDATE `{$optionsTable}` SET option_name = REPLACE(option_name, '{$fromPrefix}', '{$toPrefix}') WHERE option_name LIKE '".addslashes($fromPrefix)."%';",
-            "UPDATE `{$usermetaTable}` SET meta_key = REPLACE(meta_key, '{$fromPrefix}', '{$toPrefix}') WHERE meta_key LIKE '".addslashes($fromPrefix)."%';",
-        ]);
-
-        try {
-            if ($env->is_local) {
-                $this->runProcess([
-                    $this->binary('wp'), 'db', 'query', $sql,
-                    '--path='.$env->wordpress_path,
-                    '--allow-root',
-                ]);
-            } else {
-                $sshCmd = $this->buildSshCommand($env);
-                $wpCmd = sprintf(
-                    'wp db query %s --path=%s --allow-root',
-                    escapeshellarg($sql),
-                    escapeshellarg($env->wordpress_path),
-                );
-                $this->runProcess(['bash', '-c', $sshCmd.' '.escapeshellarg($wpCmd)]);
-            }
-        } catch (\Throwable $e) {
-            $this->output("  ⚠ Could not update meta/option key prefixes: {$e->getMessage()}\n");
         }
     }
 
