@@ -60,16 +60,22 @@ class SyncService
 
         $scope = array_unique($scope);
 
-        if (in_array('db', $scope)) {
-            $this->throwIfCancelled();
-            $this->output("=== Syncing Database ===\n");
-            $this->syncDatabase($from, $to, $direction);
-        }
+        // Ensure the destination WordPress directory exists before any file or DB operations.
+        // This is a no-op for established environments and a one-time mkdir for new ones.
+        $this->ensureWordPressDirectoryExists($to);
 
+        // Core must run before the database so that wp-config.php exists on the destination
+        // before `wp db import` is executed — this is essential when pushing to a new environment.
         if (in_array('core', $scope)) {
             $this->throwIfCancelled();
             $this->output("=== Syncing WordPress Core ===\n");
             $this->syncCore($from, $to, $direction);
+        }
+
+        if (in_array('db', $scope)) {
+            $this->throwIfCancelled();
+            $this->output("=== Syncing Database ===\n");
+            $this->syncDatabase($from, $to, $direction);
         }
 
         foreach (['themes', 'plugins', 'mu-plugins', 'uploads'] as $wpContentDir) {
@@ -101,57 +107,91 @@ class SyncService
         $timestamp = time();
         $backupBasename = strtolower(preg_replace('/[^A-Za-z0-9]+/', '-', $to->name)).'-backup-'.$timestamp;
 
+        // 0. Ensure wp-config.php exists before any WP-CLI commands run.
+        //    wp-config.php is typically excluded from file sync, so we auto-create it
+        //    from stored credentials when pushing to a new environment.
+        if ($sqlAdapter === 'wpcli') {
+            $this->ensureWpConfigExists($to);
+        }
+
         // 1. Backup destination before overwriting
         $this->backupDatabase($to, $sqlAdapter, $backupBasename);
 
-        // 2. Determine the destination's intended URL for search-replace
+        // 2. Determine URLs for search-replace before touching the destination database.
+        //    We read the SOURCE URL from $from now (before import) so we always have the
+        //    correct "imported" URL, even when the local DB was last restored from the remote.
         $destinationUrl = null;
+        $sourceUrl = null;
 
         if ($sqlAdapter === 'wpcli') {
             if ($to->vhost) {
                 $destinationUrl = rtrim($to->vhost, '/');
-                $this->output("  Destination URL (from vhost): {$destinationUrl}\n\n");
+                $this->output("  Destination URL (from vhost): {$destinationUrl}\n");
             } else {
-                $this->output("  Detecting {$to->name} site URL from database...\n");
+                $this->output("  Detecting {$to->name} destination URL...\n");
                 $destinationUrl = $this->getWordPressSiteUrl($to);
                 $this->output($destinationUrl
-                    ? "  → {$destinationUrl}\n  ⚠ Tip: set the Site URL / Vhost on this environment for reliable search-replace.\n\n"
-                    : "  → Could not detect URL — search-replace will be skipped\n\n"
+                    ? "  → Destination URL: {$destinationUrl}\n  ⚠ Tip: set the Vhost on this environment for reliable search-replace.\n"
+                    : "  → Could not detect destination URL — URL search-replace will be skipped\n"
                 );
             }
+
+            $this->output("  Detecting {$from->name} source URL...\n");
+            $sourceUrl = $this->getWordPressSiteUrl($from);
+            $this->output($sourceUrl
+                ? "  → Source URL: {$sourceUrl}\n\n"
+                : "  → Could not detect source URL — URL search-replace will be skipped\n\n"
+            );
         }
 
         // 3. Dump source and import to destination
         $this->output("  Dumping {$from->name} and importing into {$to->name}...\n\n");
 
-        $dumpCmd = $this->buildDumpCommand($from, $sqlAdapter);
-        $importCmd = $this->buildImportCommand($to, $sqlAdapter);
-
         if ($from->is_local && $to->is_local) {
+            // Both local — simple pipe is fine
+            $dumpCmd = $this->buildDumpCommand($from, $sqlAdapter);
+            $importCmd = $this->buildImportCommand($to, $sqlAdapter);
             $this->runProcess(['bash', '-c', "{$dumpCmd} | {$importCmd}"]);
         } elseif ($from->is_local && ! $to->is_local) {
-            $sshCmd = $this->buildSshCommand($to);
-            $this->runProcess(['bash', '-c', "{$dumpCmd} | {$sshCmd} '{$importCmd}'"]);
+            // Push: local → remote
+            // Piping a local dump into a remote `wp db import -` over SSH stdin is unreliable
+            // on many shared hosts (stdin may not be faithfully forwarded). We instead dump to
+            // a local temp file, stream it to a remote temp file via SSH, then import on remote.
+            if ($sqlAdapter === 'wpcli') {
+                $this->importViaRemoteTempFile($from, $to);
+            } else {
+                $dumpCmd = $this->buildDumpCommand($from, $sqlAdapter);
+                $importCmd = $this->buildImportCommand($to, $sqlAdapter);
+                $sshCmd = $this->buildSshCommand($to);
+                $this->runProcess(['bash', '-c', "set -o pipefail; {$dumpCmd} | {$sshCmd} ".escapeshellarg($importCmd)]);
+            }
         } elseif (! $from->is_local && $to->is_local) {
-            $sshCmd = $this->buildSshCommand($from);
-            $this->runProcess(['bash', '-c', "{$sshCmd} '{$dumpCmd}' | {$importCmd}"]);
+            // Pull: remote → local
+            if ($sqlAdapter === 'wpcli') {
+                $this->exportViaRemoteTempFile($from, $to);
+            } else {
+                $dumpCmd = $this->buildDumpCommand($from, $sqlAdapter);
+                $importCmd = $this->buildImportCommand($to, $sqlAdapter);
+                $sshCmd = $this->buildSshCommand($from);
+                $this->runProcess(['bash', '-c', "set -o pipefail; {$sshCmd} ".escapeshellarg($dumpCmd)." | {$importCmd}"]);
+            }
         } else {
             throw new \RuntimeException('Remote-to-remote database sync is not supported. Use a local environment as intermediary.');
         }
 
-        // 4. wp search-replace: swap imported source URL back to destination URL
-        if ($destinationUrl && $sqlAdapter === 'wpcli') {
-            $importedUrl = $this->getWordPressSiteUrl($to);
-
-            if ($importedUrl && $importedUrl !== $destinationUrl) {
+        // 4. wp search-replace: swap the source URL to the destination URL.
+        //    We use $sourceUrl (captured before the import) so this works correctly
+        //    even when the local DB already held the remote URL from a previous pull.
+        if ($destinationUrl && $sourceUrl && $sqlAdapter === 'wpcli') {
+            if ($sourceUrl !== $destinationUrl) {
                 $this->output("\n  Running wp search-replace (URL)\n");
-                $this->output("  {$importedUrl} → {$destinationUrl}\n\n");
-                $this->runSearchReplace($to, $importedUrl, $destinationUrl);
-            } elseif ($importedUrl) {
-                $this->output("\n  URLs match ({$destinationUrl}) — skipping URL search-replace\n");
+                $this->output("  {$sourceUrl} → {$destinationUrl}\n\n");
+                $this->runSearchReplace($to, $sourceUrl, $destinationUrl);
             } else {
-                $this->output("\n  ⚠ Could not detect imported URL — skipping URL search-replace\n");
+                $this->output("\n  URLs match ({$destinationUrl}) — skipping URL search-replace\n");
             }
+        } elseif ($destinationUrl && $sqlAdapter === 'wpcli') {
+            $this->output("\n  ⚠ Could not detect source URL — skipping URL search-replace\n");
         }
 
         // 5. wp search-replace: swap source wordpress_path to destination path (if they differ)
@@ -228,6 +268,202 @@ class SyncService
         }
 
         return $exportCmd.' && '.$gzip.' -9 -f '.escapeshellarg($backupFile);
+    }
+
+    /**
+     * Ensure the destination WordPress directory exists.
+     * When pushing to a brand-new environment there may be nothing at the path yet.
+     * For remote envs we create the directory via SSH mkdir; for local we use PHP.
+     */
+    private function ensureWordPressDirectoryExists(Environment $env): void
+    {
+        $path = rtrim($env->wordpress_path, '/');
+
+        if ($env->is_local) {
+            if (! is_dir($path)) {
+                $this->output("  ⚠ WordPress directory not found locally — creating {$path}\n");
+                mkdir($path, 0755, true);
+            }
+
+            return;
+        }
+
+        $ssh = $this->buildSshCommand($env);
+        $checkCmd = 'test -d '.escapeshellarg($path).' && echo EXISTS || echo MISSING';
+        $process = new Process(['bash', '-c', "{$ssh} ".escapeshellarg($checkCmd)], timeout: 15);
+        $process->run();
+
+        if (str_contains($process->getOutput(), 'MISSING')) {
+            $this->output("  ⚠ WordPress directory not found on {$env->name} — creating {$path}\n");
+            $mkdirProcess = new Process(['bash', '-c', $ssh.' '.escapeshellarg('mkdir -p '.escapeshellarg($path))], timeout: 15);
+            $mkdirProcess->run();
+
+            if (! $mkdirProcess->isSuccessful()) {
+                throw new \RuntimeException("Could not create WordPress directory on {$env->name}: {$path}");
+            }
+        }
+    }
+
+    /**
+     * Ensure the destination has a wp-config.php before any WP-CLI commands are run.
+     *
+     * Strategy 1 — wp config create  (requires WP-CLI + wp-config-sample.php on the remote).
+     * Strategy 2 — generate a minimal wp-config.php locally from stored DB credentials
+     *              and upload it via an SSH pipe, so no SCP/SFTP dependency is needed.
+     */
+    private function ensureWpConfigExists(Environment $env): void
+    {
+        if ($this->hasWpConfig($env)) {
+            return;
+        }
+
+        $this->output("  ⚠ No wp-config.php found on {$env->name}.\n");
+
+        if (! $env->db_name || ! $env->db_user) {
+            $this->output("  ⚠ No DB credentials configured — database import may fail.\n\n");
+
+            return;
+        }
+
+        $this->output("  Attempting to create wp-config.php from stored environment credentials...\n");
+
+        if ($this->createWpConfigViaWpCli($env)) {
+            $this->output("  ✓ wp-config.php created via wp-cli.\n\n");
+
+            return;
+        }
+
+        // WP-CLI not available or failed — generate and upload a minimal config.
+        $this->uploadGeneratedWpConfig($env);
+        $this->output("  ✓ wp-config.php generated and uploaded.\n\n");
+    }
+
+    /**
+     * Check whether wp-config.php already exists on the given environment.
+     */
+    private function hasWpConfig(Environment $env): bool
+    {
+        $path = rtrim($env->wordpress_path, '/').'/wp-config.php';
+
+        if ($env->is_local) {
+            return file_exists($path);
+        }
+
+        $ssh = $this->buildSshCommand($env);
+        $checkCmd = 'test -f '.escapeshellarg($path).' && echo EXISTS || echo MISSING';
+        $process = new Process(['bash', '-c', "{$ssh} ".escapeshellarg($checkCmd)], timeout: 15);
+        $process->run();
+
+        return str_contains($process->getOutput(), 'EXISTS');
+    }
+
+    /**
+     * Attempt to create wp-config.php on the destination using `wp config create`.
+     * This requires WP-CLI and wp-config-sample.php to already be present (they will
+     * be if core was synced first).
+     *
+     * Returns true on success, false if WP-CLI is unavailable or the command fails.
+     */
+    private function createWpConfigViaWpCli(Environment $env): bool
+    {
+        $dbHost = $env->db_host ?? 'localhost';
+        if ($env->db_port && $env->db_port != 3306) {
+            $dbHost .= ':'.$env->db_port;
+        }
+
+        $args = [
+            '--dbname='.$env->db_name,
+            '--dbuser='.$env->db_user,
+            '--dbhost='.$dbHost,
+            '--dbprefix='.($env->db_prefix ?: 'wp_'),
+            '--path='.$env->wordpress_path,
+            '--skip-check',
+            '--allow-root',
+            '--force',
+        ];
+
+        if ($env->db_password) {
+            $args[] = '--dbpass='.$env->db_password;
+        }
+
+        try {
+            if ($env->is_local) {
+                $this->runProcess(array_merge([$this->binary('wp'), 'config', 'create'], $args));
+            } else {
+                $wpCmd = 'wp config create '.implode(' ', array_map('escapeshellarg', $args));
+                $ssh = $this->buildSshCommand($env);
+                $this->runProcess(['bash', '-c', "{$ssh} ".escapeshellarg($wpCmd)]);
+            }
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * Generate a minimal but functional wp-config.php from the environment's stored DB
+     * credentials and upload it. Used as a fallback when WP-CLI is not available.
+     */
+    private function uploadGeneratedWpConfig(Environment $env): void
+    {
+        $content = $this->buildMinimalWpConfigContent($env);
+        $remotePath = rtrim($env->wordpress_path, '/').'/wp-config.php';
+
+        if ($env->is_local) {
+            file_put_contents($remotePath, $content);
+
+            return;
+        }
+
+        // Write to a local temp file and stream it over SSH without needing SCP/SFTP.
+        $tmpFile = tempnam(sys_get_temp_dir(), 'sitesync_wpcfg_');
+        file_put_contents($tmpFile, $content);
+
+        register_shutdown_function(fn () => @unlink($tmpFile));
+
+        $ssh = $this->buildSshCommand($env);
+        $receiveCmd = 'cat > '.escapeshellarg($remotePath);
+        $this->runProcess(['bash', '-c', 'cat '.escapeshellarg($tmpFile)." | {$ssh} ".escapeshellarg($receiveCmd)]);
+    }
+
+    /**
+     * Build the PHP content of a minimal wp-config.php using the environment's stored
+     * DB credentials and fresh random authentication salts.
+     */
+    private function buildMinimalWpConfigContent(Environment $env): string
+    {
+        $dbHost = $env->db_host ?? 'localhost';
+        if ($env->db_port && $env->db_port != 3306) {
+            $dbHost .= ':'.$env->db_port;
+        }
+
+        $esc = fn (string $v): string => str_replace("'", "\\'", $v);
+        $salt = fn (): string => bin2hex(random_bytes(32));
+        $prefix = $esc($env->db_prefix ?: 'wp_');
+
+        $saltKeys = ['AUTH_KEY', 'SECURE_AUTH_KEY', 'LOGGED_IN_KEY', 'NONCE_KEY', 'AUTH_SALT', 'SECURE_AUTH_SALT', 'LOGGED_IN_SALT', 'NONCE_SALT'];
+        $saltLines = implode("\n", array_map(fn (string $k): string => "define( '{$k}', '{$salt()}' );", $saltKeys));
+
+        return <<<PHP
+        <?php
+        define( 'DB_NAME',     '{$esc($env->db_name ?? '')}' );
+        define( 'DB_USER',     '{$esc($env->db_user ?? '')}' );
+        define( 'DB_PASSWORD', '{$esc($env->db_password ?? '')}' );
+        define( 'DB_HOST',     '{$esc($dbHost)}' );
+        define( 'DB_CHARSET',  'utf8mb4' );
+        define( 'DB_COLLATE',  '' );
+
+        {$saltLines}
+
+        \$table_prefix = '{$prefix}';
+
+        if ( ! defined( 'ABSPATH' ) ) {
+            define( 'ABSPATH', __DIR__ . '/' );
+        }
+
+        require_once ABSPATH . 'wp-settings.php';
+        PHP;
     }
 
     private function getWordPressSiteUrl(Environment $env): ?string
@@ -331,6 +567,185 @@ class SyncService
         return "{$mysql} {$args} ".escapeshellarg($env->db_name);
     }
 
+    /**
+     * Push DB: dump locally to a temp file, stream it to the remote via SSH cat, import.
+     *
+     * This avoids relying on ssh stdin pipe forwarding (unreliable on many shared hosts).
+     */
+    private function importViaRemoteTempFile(Environment $from, Environment $to): void
+    {
+        $wp = $this->binary('wp');
+        $tmpLocal = sys_get_temp_dir().'/sitesync_dump_'.uniqid().'.sql';
+        $tmpRemote = '/tmp/sitesync_import_'.uniqid().'.sql';
+
+        register_shutdown_function(fn () => @unlink($tmpLocal));
+
+        $fromPrefix = rtrim($from->db_prefix ?? 'wp_', '_').'_';
+        $toPrefix = rtrim($to->db_prefix ?? 'wp_', '_').'_';
+
+        try {
+            // 1. Dump locally to a temp file
+            $this->runProcess([
+                $wp, 'db', 'export', $tmpLocal,
+                '--path='.$from->wordpress_path,
+                '--allow-root',
+            ]);
+
+            if (! file_exists($tmpLocal) || filesize($tmpLocal) === 0) {
+                throw new \RuntimeException('Local database dump produced an empty file — aborting import.');
+            }
+
+            // Rewrite table prefix in the dump if source and destination prefixes differ
+            if ($fromPrefix !== $toPrefix) {
+                $this->rewriteTablePrefixInDump($tmpLocal, $fromPrefix, $toPrefix);
+            }
+
+            // 2. Stream to a remote temp file via SSH cat — no SCP/SFTP needed
+            $sshCmd = $this->buildSshCommand($to);
+            $this->runProcess(['bash', '-c',
+                'set -o pipefail; cat '.escapeshellarg($tmpLocal).' | '.$sshCmd.' '.escapeshellarg('cat > '.escapeshellarg($tmpRemote)),
+            ]);
+
+            // Verify the remote file has content before importing
+            $verifyProcess = new Process(['bash', '-c', $sshCmd.' '.escapeshellarg('wc -c < '.escapeshellarg($tmpRemote))], timeout: 15);
+            $verifyProcess->run();
+            if ((int) trim($verifyProcess->getOutput()) === 0) {
+                throw new \RuntimeException('Remote temp file is empty — upload may have failed.');
+            }
+
+            // 3. Import from the remote temp file
+            $remoteImportCmd = sprintf(
+                'wp db import %s --path=%s --allow-root',
+                escapeshellarg($tmpRemote),
+                escapeshellarg($to->wordpress_path),
+            );
+            $this->runProcess(['bash', '-c', $sshCmd.' '.escapeshellarg($remoteImportCmd)]);
+
+            // Fix any option_name / meta_key values that still carry the old prefix
+            if ($fromPrefix !== $toPrefix) {
+                $this->fixPrefixedMetaKeys($to, $fromPrefix, $toPrefix);
+            }
+        } finally {
+            // 4. Clean up remote temp file (best-effort)
+            $sshCmd = $this->buildSshCommand($to);
+            $cleanupProcess = new Process(['bash', '-c', $sshCmd.' '.escapeshellarg('rm -f '.escapeshellarg($tmpRemote))], timeout: 15);
+            $cleanupProcess->run();
+        }
+    }
+
+    /**
+     * Pull DB: dump to a remote temp file, stream it locally, then import.
+     *
+     * This avoids relying on ssh stdout pipe forwarding being clean (mixed-in output
+     * from remote shells/bashrc can corrupt a mysqldump stream).
+     */
+    private function exportViaRemoteTempFile(Environment $from, Environment $to): void
+    {
+        $wp = $this->binary('wp');
+        $tmpLocal = sys_get_temp_dir().'/sitesync_dump_'.uniqid().'.sql';
+        $tmpRemote = '/tmp/sitesync_export_'.uniqid().'.sql';
+
+        register_shutdown_function(fn () => @unlink($tmpLocal));
+
+        $sshCmd = $this->buildSshCommand($from);
+
+        $fromPrefix = rtrim($from->db_prefix ?? 'wp_', '_').'_';
+        $toPrefix = rtrim($to->db_prefix ?? 'wp_', '_').'_';
+
+        try {
+            // 1. Dump to a temp file on the remote
+            $this->runProcess(['bash', '-c', $sshCmd.' '.escapeshellarg(sprintf(
+                'wp db export %s --path=%s --allow-root',
+                escapeshellarg($tmpRemote),
+                escapeshellarg($from->wordpress_path),
+            ))]);
+
+            // 2. Stream down to a local temp file
+            $this->runProcess(['bash', '-c',
+                $sshCmd.' '.escapeshellarg('cat '.escapeshellarg($tmpRemote)).' > '.escapeshellarg($tmpLocal),
+            ]);
+
+            if (! file_exists($tmpLocal) || filesize($tmpLocal) === 0) {
+                throw new \RuntimeException('Remote database dump produced an empty file — aborting import.');
+            }
+
+            // Rewrite table prefix if source and destination prefixes differ
+            if ($fromPrefix !== $toPrefix) {
+                $this->rewriteTablePrefixInDump($tmpLocal, $fromPrefix, $toPrefix);
+            }
+
+            // 3. Import locally
+            $this->runProcess([
+                $wp, 'db', 'import', $tmpLocal,
+                '--path='.$to->wordpress_path,
+                '--allow-root',
+            ]);
+
+            // Fix any option_name / meta_key values that still carry the old prefix
+            if ($fromPrefix !== $toPrefix) {
+                $this->fixPrefixedMetaKeys($to, $fromPrefix, $toPrefix);
+            }
+        } finally {
+            // 4. Clean up remote temp file (best-effort)
+            $cleanupProcess = new Process(['bash', '-c', $sshCmd.' '.escapeshellarg('rm -f '.escapeshellarg($tmpRemote))], timeout: 15);
+            $cleanupProcess->run();
+        }
+    }
+
+    /**
+     * Rewrite table-name identifiers in an SQL dump file from one WP table prefix to another.
+     *
+     * Only backtick-quoted identifiers are replaced (e.g. `ghl_options` → `wp_options`),
+     * so regular string data in INSERT values is left untouched.
+     */
+    private function rewriteTablePrefixInDump(string $path, string $fromPrefix, string $toPrefix): void
+    {
+        $this->output("  ✎ Rewriting table prefix: {$fromPrefix} → {$toPrefix}\n");
+
+        $sql = file_get_contents($path);
+        $sql = str_replace('`'.$fromPrefix, '`'.$toPrefix, $sql);
+        file_put_contents($path, $sql);
+    }
+
+    /**
+     * After a DB import that involved a prefix rename, some WordPress data (option_name,
+     * meta_key) stores the table prefix as part of the key value itself
+     * (e.g. option_name="ghl_user_roles", meta_key="ghl_capabilities").
+     * Run targeted SQL UPDATEs via WP-CLI to rename those values too.
+     */
+    private function fixPrefixedMetaKeys(Environment $env, string $fromPrefix, string $toPrefix): void
+    {
+        $this->output("  ✎ Fixing stored option/meta keys: {$fromPrefix} → {$toPrefix}\n");
+
+        $optionsTable = $toPrefix.'options';
+        $usermetaTable = $toPrefix.'usermeta';
+
+        $sql = implode(' ', [
+            "UPDATE `{$optionsTable}` SET option_name = REPLACE(option_name, '{$fromPrefix}', '{$toPrefix}') WHERE option_name LIKE '".addslashes($fromPrefix)."%';",
+            "UPDATE `{$usermetaTable}` SET meta_key = REPLACE(meta_key, '{$fromPrefix}', '{$toPrefix}') WHERE meta_key LIKE '".addslashes($fromPrefix)."%';",
+        ]);
+
+        try {
+            if ($env->is_local) {
+                $this->runProcess([
+                    $this->binary('wp'), 'db', 'query', $sql,
+                    '--path='.$env->wordpress_path,
+                    '--allow-root',
+                ]);
+            } else {
+                $sshCmd = $this->buildSshCommand($env);
+                $wpCmd = sprintf(
+                    'wp db query %s --path=%s --allow-root',
+                    escapeshellarg($sql),
+                    escapeshellarg($env->wordpress_path),
+                );
+                $this->runProcess(['bash', '-c', $sshCmd.' '.escapeshellarg($wpCmd)]);
+            }
+        } catch (\Throwable $e) {
+            $this->output("  ⚠ Could not update meta/option key prefixes: {$e->getMessage()}\n");
+        }
+    }
+
     private function syncFiles(Environment $from, Environment $to, string $direction): void
     {
         $sourcePath = rtrim($from->wordpress_path, '/').'/wp-content/';
@@ -416,6 +831,42 @@ class SyncService
         $sshOptions = $this->buildSshOptions($remoteEnv);
         $excludes = $this->buildExcludes($from, $to);
         $rsyncOptions = $from->rsync_options ?? $to->rsync_options ?? '--verbose --itemize-changes --no-perms --no-owner --no-group';
+
+        // When the source path contains glob characters (e.g. wp-*.php) we must run through
+        // a shell so that local globs are expanded before rsync sees the argument.
+        // For remote sources (user@host:/path/glob) the source is quoted so the local shell
+        // leaves it untouched and rsync handles expansion on the remote side.
+        $hasGlob = str_contains($source, '*') || str_contains($source, '?') || str_contains($source, '[');
+
+        if ($hasGlob) {
+            $eFlag = "{$this->binary('ssh')} {$sshOptions}";
+
+            $parts = [escapeshellarg($this->binary('rsync')), '-avz'];
+
+            if ($rsyncOptions) {
+                foreach (array_filter(explode(' ', $rsyncOptions)) as $opt) {
+                    $parts[] = $opt;
+                }
+            }
+
+            $parts[] = '-e';
+            $parts[] = escapeshellarg($eFlag);
+
+            foreach ($excludes as $exclude) {
+                $parts[] = '--exclude='.$exclude;
+            }
+
+            // Local source globs must NOT be quoted so the shell expands them.
+            // Remote source paths (containing a colon) are quoted so the local shell
+            // leaves them untouched and rsync passes them to the remote side.
+            $isRemoteSource = str_contains($source, ':');
+            $sourcePart = $isRemoteSource ? escapeshellarg($source) : $source;
+
+            $shellCmd = implode(' ', $parts).' '.$sourcePart.' '.escapeshellarg($target);
+            $this->runProcess(['bash', '-c', $shellCmd]);
+
+            return;
+        }
 
         $cmd = [$this->binary('rsync'), '-avz'];
 
