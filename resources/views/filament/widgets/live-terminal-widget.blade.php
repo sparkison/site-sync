@@ -7,8 +7,8 @@
             $siteUrl = $this->siteUrl;
 
             // Show at most the last 50 KB on initial load; polling appends new content on top.
-            $rawContent   = $syncLog?->getOutputContent() ?? '';
-            $rawSize      = strlen($rawContent);
+            $rawContent = $syncLog?->getOutputContent() ?? '';
+            $rawSize = strlen($rawContent);
             $initialLimit = 50_000;
 
             if ($rawSize > $initialLimit) {
@@ -32,7 +32,7 @@
                 siteUrl:   @js($siteUrl),
                 output:    @js($initialContent),
                 startedAt: @js($syncLog?->started_at?->format('H:i:s')),
-                duration:  @js($syncLog?->completed_at ? $syncLog->started_at->diffForHumans($syncLog->completed_at, true) : null),
+                duration:  @js($syncLog?->completed_at && $syncLog->started_at ? $syncLog->started_at->diffForHumans($syncLog->completed_at, true) : null),
 
                 init() {
                     this.$nextTick(() => this.scrollToBottom());
