@@ -37,6 +37,7 @@ class SiteSyncAction extends Component implements HasActions, HasSchemas
                         $set('from_environment_id', null);
                         $set('to_environment_id', null);
                     })
+                    ->searchable()
                     ->required()
                     ->live()
                     ->reactive(),
@@ -61,11 +62,13 @@ class SiteSyncAction extends Component implements HasActions, HasSchemas
                         'push' => 'Push (source → target)',
                         'pull' => 'Pull (source → target)',
                     ])
-                    ->default('pull')
+                    ->native(false)
+                    ->default('push')
                     ->required(),
 
                 Forms\Components\CheckboxList::make('scope')
                     ->label('What to sync')
+                    ->bulkToggleable()
                     ->options([
                         'themes' => 'Themes',
                         'plugins' => 'Plugins',
@@ -79,7 +82,7 @@ class SiteSyncAction extends Component implements HasActions, HasSchemas
                     ->columns(2),
 
                 Forms\Components\TagsInput::make('custom_paths')
-                    ->label('Custom paths')
+                    ->label('Custom paths to sync')
                     ->placeholder('backups, wp-content/plugins/my-plugin, …')
                     ->helperText('Relative to the WordPress root. Press Enter to add each path.')
                     ->splitKeys(['Enter', 'Tab', ',']),

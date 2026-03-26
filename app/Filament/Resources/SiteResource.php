@@ -143,25 +143,26 @@ class SiteResource extends Resource
                                 'push' => 'Push (source → target)',
                                 'pull' => 'Pull (source → target)',
                             ])
-                            ->default('pull')
+                            ->default('push')
                             ->required(),
 
                         Forms\Components\CheckboxList::make('scope')
                             ->label('What to sync')
+                            ->bulkToggleable()
                             ->options([
-                                'db' => 'Database',
                                 'themes' => 'Themes',
                                 'plugins' => 'Plugins',
                                 'mu-plugins' => 'MU-Plugins',
                                 'uploads' => 'Uploads',
                                 'core' => 'WordPress Core',
+                                'db' => 'Database',
                                 'all' => 'Everything',
                             ])
-                            ->default(['db'])
+                            ->default(['themes'])
                             ->columns(2),
 
                         Forms\Components\TagsInput::make('custom_paths')
-                            ->label('Custom paths')
+                            ->label('Custom paths to sync')
                             ->placeholder('backups, wp-content/plugins/my-plugin, …')
                             ->helperText('Relative to the WordPress root. Press Enter to add each path.')
                             ->splitKeys(['Enter', 'Tab', ',']),
