@@ -61,6 +61,11 @@
                         this.logId     = data.id;
                         this.offset    = data.offset;
 
+                        // Notify other components on the same page via a custom event,
+                        // and persist to localStorage so the header can seed correctly on other pages.
+                        window.dispatchEvent(new CustomEvent('sitesync:status', { detail: { status: data.status } }));
+                        localStorage.setItem('sitesync_status', data.status ?? '');
+
                         if (isNewLog) {
                             this.output = data.content;
                         } else if (data.content) {

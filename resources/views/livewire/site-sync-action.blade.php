@@ -1,14 +1,11 @@
 <div class="flex items-center gap-2" x-data="{
         syncing: @js($this->hasSyncInProgress),
-        async poll() {
-            try {
-                const res = await fetch('{{ route('sync-logs.latest') }}');
-                const data = await res.json();
-                this.syncing = data && (data.status === 'pending' || data.status === 'running');
-            } catch {}
-        },
-        init() { setInterval(() => this.poll(), 2000); }
-    }">
+        init() {
+            // Seed from localStorage when the Live Terminal widget isn't on this page
+            const stored = localStorage.getItem('sitesync_status') ?? '';
+            if (stored) this.syncing = stored === 'pending' || stored === 'running';
+        }
+    }" @sitesync:status.window="syncing = ($event.detail.status === 'pending' || $event.detail.status === 'running')">
     <div class="[&_svg]:animate-spin" x-show="syncing" x-cloak>
         <x-filament::button tag="a" href="{{ url('/') }}" icon="heroicon-o-arrow-path" color="warning" outlined
             size="sm">
