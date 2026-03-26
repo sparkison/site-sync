@@ -14,6 +14,7 @@ use Filament\Schemas;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Native\Desktop\Facades\Notification as DesktopNotification;
 
@@ -21,6 +22,12 @@ class SiteSyncAction extends Component implements HasActions, HasSchemas
 {
     use InteractsWithActions;
     use InteractsWithSchemas;
+
+    #[Computed]
+    public function hasSyncInProgress(): bool
+    {
+        return SyncLog::whereIn('status', ['pending', 'running'])->exists();
+    }
 
     public function syncSiteAction(): Action
     {

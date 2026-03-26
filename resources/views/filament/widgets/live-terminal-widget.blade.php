@@ -120,7 +120,7 @@
 
                         {{-- Re-run button (completed syncs only) --}}
                         <x-filament::button outlined icon="heroicon-m-arrow-path" wire:click="rerun"
-                            x-show="status === 'completed' || status === 'cancelled'" color="gray" size="xs">
+                            x-show="status !== 'running' && status !== 'pending'" color="gray" size="xs">
                             Re-run
                         </x-filament::button>
 

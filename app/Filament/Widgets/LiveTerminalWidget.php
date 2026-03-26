@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Filament\Resources\SiteResource;
 use App\Jobs\SyncJob;
 use App\Models\SyncLog;
+use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
 use Livewire\Attributes\Computed;
 
@@ -47,9 +48,13 @@ class LiveTerminalWidget extends Widget
     {
         $log = $this->syncLog;
 
-        if (! $log || $log->status !== 'completed') {
+        if (! $log || $log->status === 'running' || $log->status === 'pending') {
             return;
         }
+
+        Notification::make()
+            ->title('Re-running sync...')
+            ->send();
 
         $newLog = SyncLog::create([
             'site_id' => $log->site_id,
