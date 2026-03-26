@@ -2,10 +2,13 @@
 
 namespace App\Filament\Resources\SiteResource\RelationManagers;
 
+use App\Jobs\SyncJob;
+use App\Models\SyncLog;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -76,6 +79,31 @@ class SyncLogsRelationManager extends RelationManager
             ])
             ->recordActions([
                 DeleteAction::make()->button()->hiddenLabel(),
+                Action::make('rerun')
+                    ->label('Re-run')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->requiresConfirmation(true)
+                    ->button()->hiddenLabel()
+                    ->visible(fn ($record): bool => in_array($record->status, ['completed', 'failed', 'cancelled']))
+                    ->action(function ($record): void {
+                        $newLog = SyncLog::create([
+                            'site_id' => $record->site_id,
+                            'from_environment_id' => $record->from_environment_id,
+                            'to_environment_id' => $record->to_environment_id,
+                            'direction' => $record->direction,
+                            'scope' => $record->scope,
+                            'status' => 'pending',
+                        ]);
+
+                        SyncJob::dispatch($newLog);
+
+                        Notification::make()
+                            ->title('Sync queued')
+                            ->body('Re-running the same sync. Check sync history for progress.')
+                            ->success()
+                            ->send();
+                    }),
                 Action::make('view_output')
                     ->label('Output')
                     ->icon('heroicon-o-command-line')

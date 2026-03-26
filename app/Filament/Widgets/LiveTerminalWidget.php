@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Resources\SiteResource;
+use App\Jobs\SyncJob;
 use App\Models\SyncLog;
 use Filament\Widgets\Widget;
 use Livewire\Attributes\Computed;
@@ -40,5 +41,25 @@ class LiveTerminalWidget extends Widget
         $log = SyncLog::whereIn('status', ['pending', 'running'])->latest()->first();
 
         $log?->markCancelled();
+    }
+
+    public function rerun(): void
+    {
+        $log = $this->syncLog;
+
+        if (! $log || $log->status !== 'completed') {
+            return;
+        }
+
+        $newLog = SyncLog::create([
+            'site_id' => $log->site_id,
+            'from_environment_id' => $log->from_environment_id,
+            'to_environment_id' => $log->to_environment_id,
+            'direction' => $log->direction,
+            'scope' => $log->scope,
+            'status' => 'pending',
+        ]);
+
+        SyncJob::dispatch($newLog);
     }
 }

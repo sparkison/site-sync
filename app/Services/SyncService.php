@@ -605,9 +605,10 @@ class SyncService
     }
 
     /**
-     * Push DB: dump locally to a temp file, stream it to the remote via SSH cat, import.
+     * Push DB: dump locally to a temp file, copy it to the remote via scp, import.
      *
-     * This avoids relying on ssh stdin pipe forwarding (unreliable on many shared hosts).
+     * Using scp (rather than SSH stdin piping) avoids hangs on shared hosts that
+     * throttle or restrict SSH stdin forwarding for large payloads.
      */
     private function importViaRemoteTempFile(Environment $from, Environment $to): void
     {
@@ -629,21 +630,16 @@ class SyncService
                 throw new \RuntimeException('Local database dump produced an empty file — aborting import.');
             }
 
-            // 2. Stream to a remote temp file via SSH — redirect the file directly into SSH's
-            //    stdin so there is no intermediate pipe that can stall in non-interactive contexts.
-            $sshCmd = $this->buildSshCommand($to);
-            $this->runProcess(['bash', '-c',
-                $sshCmd.' '.escapeshellarg('cat > '.escapeshellarg($tmpRemote)).' < '.escapeshellarg($tmpLocal),
-            ]);
-
-            // Verify the remote file has content before importing
-            $verifyProcess = new Process(['bash', '-c', $sshCmd.' '.escapeshellarg('wc -c < '.escapeshellarg($tmpRemote))], timeout: 15);
-            $verifyProcess->run();
-            if ((int) trim($verifyProcess->getOutput()) === 0) {
-                throw new \RuntimeException('Remote temp file is empty — upload may have failed.');
-            }
+            // 2. Copy to the remote via scp — no SSH stdin pipe involved
+            $scpOptions = $this->buildScpOptions($to);
+            $this->runProcess(array_merge(
+                ['scp'],
+                $scpOptions,
+                [$tmpLocal, "{$to->ssh_user}@{$to->ssh_host}:{$tmpRemote}"],
+            ));
 
             // 3. Import from the remote temp file
+            $sshCmd = $this->buildSshCommand($to);
             $remoteImportCmd = sprintf(
                 'wp db import %s --path=%s --allow-root',
                 escapeshellarg($tmpRemote),
@@ -659,10 +655,10 @@ class SyncService
     }
 
     /**
-     * Pull DB: dump to a remote temp file, stream it locally, then import.
+     * Pull DB: dump to a remote temp file, download it via scp, then import.
      *
-     * This avoids relying on ssh stdout pipe forwarding being clean (mixed-in output
-     * from remote shells/bashrc can corrupt a mysqldump stream).
+     * Using scp (rather than SSH stdout piping) avoids bashrc/shell output contaminating
+     * the stream and prevents hangs on shared hosts that restrict SSH I/O forwarding.
      */
     private function exportViaRemoteTempFile(Environment $from, Environment $to): void
     {
@@ -682,10 +678,13 @@ class SyncService
                 escapeshellarg($from->wordpress_path),
             ))]);
 
-            // 2. Stream down to a local temp file
-            $this->runProcess(['bash', '-c',
-                $sshCmd.' '.escapeshellarg('cat '.escapeshellarg($tmpRemote)).' > '.escapeshellarg($tmpLocal),
-            ]);
+            // 2. Download the remote temp file via scp — no SSH stdout pipe involved
+            $scpOptions = $this->buildScpOptions($from);
+            $this->runProcess(array_merge(
+                ['scp'],
+                $scpOptions,
+                ["{$from->ssh_user}@{$from->ssh_host}:{$tmpRemote}", $tmpLocal],
+            ));
 
             if (! file_exists($tmpLocal) || filesize($tmpLocal) === 0) {
                 throw new \RuntimeException('Remote database dump produced an empty file — aborting import.');
@@ -929,6 +928,31 @@ class SyncService
     private function splitSshOptions(string $options): array
     {
         return array_values(array_filter(explode(' ', $options)));
+    }
+
+    /**
+     * Build scp option array from an environment's SSH connection settings.
+     *
+     * scp uses -P (uppercase) for port, unlike ssh's -p (lowercase).
+     *
+     * @return string[]
+     */
+    private function buildScpOptions(Environment $env): array
+    {
+        $options = ['-o', 'StrictHostKeyChecking=no', '-o', 'BatchMode=yes'];
+
+        if ($env->ssh_port && $env->ssh_port != 22) {
+            $options[] = '-P';
+            $options[] = (string) $env->ssh_port;
+        }
+
+        $keyFile = $this->resolveKeyFile($env);
+        if ($keyFile) {
+            $options[] = '-i';
+            $options[] = $keyFile;
+        }
+
+        return $options;
     }
 
     private function buildSshCommand(Environment $env): string

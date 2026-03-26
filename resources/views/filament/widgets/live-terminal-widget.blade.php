@@ -118,6 +118,12 @@
                             Cancel
                         </x-filament::button>
 
+                        {{-- Re-run button (completed syncs only) --}}
+                        <x-filament::button outlined icon="heroicon-m-arrow-path" wire:click="rerun"
+                            x-show="status === 'completed' || status === 'cancelled'" color="gray" size="xs">
+                            Re-run
+                        </x-filament::button>
+
                         {{-- Site link --}}
                         <a x-bind:href="siteUrl ?? '#'" x-show="siteName"
                             class="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
