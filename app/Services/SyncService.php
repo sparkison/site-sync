@@ -64,6 +64,13 @@ class SyncService
         // This is a no-op for established environments and a one-time mkdir for new ones.
         $this->ensureWordPressDirectoryExists($to);
 
+        // Ensure wp-content exists on the destination when any wp-content directories are being synced.
+        // Rsync can create the final subdirectory (themes/, plugins/, etc.) but only if the parent exists.
+        $wpContentScopes = ['themes', 'plugins', 'mu-plugins', 'uploads'];
+        if (! empty(array_intersect($wpContentScopes, $scope))) {
+            $this->ensureWpContentDirectoryExists($to);
+        }
+
         // Core must run before the database so that wp-config.php exists on the destination
         // before `wp db import` is executed — this is essential when pushing to a new environment.
         if (in_array('core', $scope)) {
@@ -268,6 +275,36 @@ class SyncService
         }
 
         return $exportCmd.' && '.$gzip.' -9 -f '.escapeshellarg($backupFile);
+    }
+
+    /**
+     * Ensure wp-content/ exists on the destination environment.
+     * Rsync can create final subdirectories (themes/, plugins/, …) but only when the parent
+     * directory already exists — this creates it when syncing to a brand-new install.
+     */
+    private function ensureWpContentDirectoryExists(Environment $env): void
+    {
+        $path = rtrim($env->wordpress_path, '/').'/wp-content';
+
+        if ($env->is_local) {
+            if (! is_dir($path)) {
+                $this->output("  ⚠ wp-content not found locally — creating {$path}\n");
+                mkdir($path, 0755, true);
+            }
+
+            return;
+        }
+
+        $ssh = $this->buildSshCommand($env);
+        $mkdirProcess = new Process(
+            ['bash', '-c', $ssh.' '.escapeshellarg('mkdir -p '.escapeshellarg($path))],
+            timeout: 15
+        );
+        $mkdirProcess->run();
+
+        if (! $mkdirProcess->isSuccessful()) {
+            $this->output("  ⚠ Could not create wp-content on {$env->name} — rsync may fail\n");
+        }
     }
 
     /**
@@ -592,10 +629,11 @@ class SyncService
                 throw new \RuntimeException('Local database dump produced an empty file — aborting import.');
             }
 
-            // 2. Stream to a remote temp file via SSH cat — no SCP/SFTP needed
+            // 2. Stream to a remote temp file via SSH — redirect the file directly into SSH's
+            //    stdin so there is no intermediate pipe that can stall in non-interactive contexts.
             $sshCmd = $this->buildSshCommand($to);
             $this->runProcess(['bash', '-c',
-                'set -o pipefail; cat '.escapeshellarg($tmpLocal).' | '.$sshCmd.' '.escapeshellarg('cat > '.escapeshellarg($tmpRemote)),
+                $sshCmd.' '.escapeshellarg('cat > '.escapeshellarg($tmpRemote)).' < '.escapeshellarg($tmpLocal),
             ]);
 
             // Verify the remote file has content before importing
@@ -723,11 +761,14 @@ class SyncService
 
     private function syncCore(Environment $from, Environment $to, string $direction): void
     {
-        $corePatterns = ['wp-admin/', 'wp-includes/', 'wp-*.php'];
+        // Globs (wp-*.php, *.html) must target the root dir so rsync places matched files there.
+        // Explicit files (index.php, xmlrpc.php, …) target themselves directly.
+        $corePatterns = ['wp-admin/', 'wp-includes/', 'index.php', 'xmlrpc.php', 'license.txt', 'wp-*.php', '*.html'];
 
         foreach ($corePatterns as $pattern) {
             $sourcePath = rtrim($from->wordpress_path, '/').'/'.$pattern;
-            if ($pattern === 'wp-*.php') {
+            $isGlob = str_contains($pattern, '*') || str_contains($pattern, '?') || str_contains($pattern, '[');
+            if ($isGlob) {
                 $targetPath = rtrim($to->wordpress_path, '/').'/';
             } else {
                 $targetPath = rtrim($to->wordpress_path, '/').'/'.$pattern;
