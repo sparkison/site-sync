@@ -43,7 +43,7 @@
         "@electron-toolkit/preload": "^3.0.1",
         "@electron-toolkit/utils": "^4.0.0",
         "@electron/remote": "^2.1.2",
-        "axios": "^1.7.9",
+        "axios": "^1.13.5",
         "body-parser": "^2.2.0",
         "electron-context-menu": "^4.0.4",
         "electron-store": "^10.0.0",
