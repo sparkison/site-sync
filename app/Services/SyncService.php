@@ -194,6 +194,18 @@ class SyncService
                 $this->output("\n  Running wp search-replace (URL)\n");
                 $this->output("  {$sourceUrl} → {$destinationUrl}\n\n");
                 $this->runSearchReplace($to, $sourceUrl, $destinationUrl);
+
+                // Gutenberg stores some asset URLs (e.g. custom fonts in wp_global_styles)
+                // without the scheme, or inside doubly-encoded JSON, so a schema-based replace
+                // misses them. A second pass using only the hostname catches these cases.
+                $sourceHost = parse_url($sourceUrl, PHP_URL_HOST);
+                $destinationHost = parse_url($destinationUrl, PHP_URL_HOST);
+
+                if ($sourceHost && $destinationHost && $sourceHost !== $destinationHost) {
+                    $this->output("\n  Running wp search-replace (Domain only, for Gutenberg assets)\n");
+                    $this->output("  {$sourceHost} → {$destinationHost}\n\n");
+                    $this->runSearchReplace($to, $sourceHost, $destinationHost);
+                }
             } else {
                 $this->output("\n  URLs match ({$destinationUrl}) — skipping URL search-replace\n");
             }
